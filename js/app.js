@@ -2,19 +2,27 @@
 const IMAGES_JSON = "assets-taller/images.json";
 const TOTAL_TO_SHOW = 10;
 
-// Reglas predefinidas para seleccionar
-const PREDEFINED_RULES = [
-  { id: 1, label: "✓ Contenido Apropiado", icon: "✓", color: "#2ee6a7" },
-  { id: 2, label: "✗ Contenido Ofensivo", icon: "✗", color: "#ff5e7c" },
-  { id: 3, label: "⚠ Necesita Revisión", icon: "⚠", color: "#ffd700" },
-  { id: 4, label: "❌ Violación de Normas", icon: "❌", color: "#ff3b4d" },
-  { id: 5, label: "✓ Excelente Calidad", icon: "⭐", color: "#00d4ff" },
+// Reglas para miniaturas (gamemodes)
+const GAMEMODE_RULES = [
+  { id: 1, label: "Miniatura de mala calidad", icon: "❌", color: "#ff5e7c" },
+  { id: 2, label: "Contenido inapropiado para jóvenes", icon: "⚠️", color: "#ffd700" },
+  { id: 3, label: "Usa marcas registradas", icon: "❌", color: "#ff3b4d" },
+  { id: 4, label: "Miniatura engañosa", icon: "⚠️", color: "#ff9500" },
+];
+
+// Reglas para skins
+const SKIN_RULES = [
+  { id: 5, label: "Personaje irreconocible", icon: "❌", color: "#ff5e7c" },
+  { id: 6, label: "Skin inapropiada para jóvenes", icon: "⚠️", color: "#ffd700" },
+  { id: 7, label: "Falta de respeto", icon: "❌", color: "#ff3b4d" },
+  { id: 8, label: "Copia de otro personaje o skin", icon: "⚠️", color: "#ff9500" },
 ];
 
 let allImages = [];
 let selected = [];
 let index = 0;
 let responses = [];
+let currentImageType = null; // 'gamemode' or 'skin'
 
 const startBtn = document.getElementById("start-btn");
 const evaluator = document.getElementById("evaluator");
@@ -130,6 +138,13 @@ function showImage(i) {
   const imagePath = selected[index];
   console.log("📸 Mostrando imagen:", imagePath, "en elemento:", evalImage);
 
+  // Determinar tipo de imagen y renderizar reglas apropiadas
+  currentImageType = imagePath.includes("/skins/") ? "skin" : "gamemode";
+  renderRuleButtons();
+
+  // Re-enable accept button when showing new image
+  if (acceptBtn) acceptBtn.disabled = false;
+
   // animate image change with a small scale pulse
   gsap.to("#eval-image", {
     scale: 0.96,
@@ -161,9 +176,21 @@ function showImage(i) {
 
 async function showEvaluator() {
   console.log("🎬 Mostrando evaluador...");
-  // animated intro using GSAP
+
+  // Limpiar animaciones GSAP del startScreen
+  gsap.killTweensOf(startScreen);
+
+  // OCULTAR startScreen completamente
+  startScreen.style.display = "none";
+  startScreen.style.visibility = "hidden";
   startScreen.classList.add("d-none");
+
+  // MOSTRAR evaluator
+  evaluator.style.display = "block";
+  evaluator.style.visibility = "visible";
+  evaluator.style.opacity = "1";
   evaluator.classList.remove("d-none");
+
   gsap.from(".evaluator-card", {
     y: 40,
     opacity: 0,
@@ -174,25 +201,40 @@ async function showEvaluator() {
 }
 
 async function showResults() {
+  // Limpiar animaciones previas
+  gsap.killTweensOf("*");
+
   // Ir directo a la página de resultados sin modal
   const accepted = responses.filter((r) => r.decision === "accept").length;
   const rejected = responses.filter((r) => r.decision === "reject").length;
 
-  // Ocultar evaluador y mostrar resultados
+  // Limpiar animaciones GSAP del evaluator
+  gsap.killTweensOf(evaluator);
+  gsap.killTweensOf(".evaluator-card");
+
+  // OCULTAR evaluador completamente
+  evaluator.style.display = "none";
+  evaluator.style.visibility = "hidden";
   evaluator.classList.add("d-none");
+
+  // MOSTRAR resultados
+  results.style.display = "block";
+  results.style.visibility = "visible";
+  results.style.opacity = "1";
+  results.style.zIndex = "1";
   results.classList.remove("d-none");
 
   // Build stats HTML
   const statsHTML = `
     <div class="stats-card">
       <div class="stat-item accepted-stat">
-        <div class="stat-icon">✓</div>
+        <div class="stat-icon">✅</div>
         <div class="stat-number" data-value="${accepted}">${accepted}</div>
         <div class="stat-label">Aprobadas</div>
       </div>
       <div class="stat-divider"></div>
       <div class="stat-item rejected-stat">
-        <div class="stat-icon">✗</div>
+        <div class="stat-icon">❌</div>
         <div class="stat-number" data-value="${rejected}">${rejected}</div>
         <div class="stat-label">Rechazadas</div>
       </div>
@@ -207,26 +249,22 @@ async function showResults() {
   
   responses.forEach((r, idx) => {
     const decisionClass = r.decision === "accept" ? "decision-accept" : "decision-reject";
-    const badgeText = r.decision === "accept" ? "✓ APROBADA" : "✗ RECHAZADA";
+    const badgeText = r.decision === "accept" ? "APROBADA" : "RECHAZADA";
     const badgeIcon = r.decision === "accept" ? "✓" : "✗";
     
+    // Solo mostrar el comentario si es un rechazo
+    const ruleText = r.decision === "reject" ? `<div class="response-rule">${r.comment}</div>` : '';
+
     listHTML += `
       <div class="response-card ${decisionClass}" data-index="${idx}">
-        <div class="response-badge-col">
-          <div class="response-badge ${decisionClass}">
-            <span class="badge-icon">${badgeIcon}</span>
-            <span class="badge-text">${badgeText}</span>
-          </div>
+        <div class="response-badge ${decisionClass}">
+          <span class="badge-icon">${badgeIcon}</span>
+          <span class="badge-text">${badgeText}</span>
         </div>
-        <div class="response-content-col">
-          <div class="response-image-wrap">
-            <img src="${r.image}" alt="respuesta-${idx}" class="response-thumb" />
-          </div>
-          <div class="response-meta">
-            <div class="response-path">${r.image.split("/").pop()}</div>
-            <div class="response-rule">${r.comment}</div>
-          </div>
+        <div class="response-image-wrap">
+          <img src="${r.image}" alt="respuesta-${idx}" class="response-thumb" />
         </div>
+        ${ruleText}
       </div>
     `;
   });
@@ -265,8 +303,10 @@ function animateResultsEntrance() {
   // Register plugins
   gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-  // Resetear cualquier transformación previa en los botones
+  // Resetear transformaciones previas
   gsap.set(".results-actions button", { clearProps: "all" });
+  gsap.set(container, { clearProps: "all", opacity: 1 });
+  gsap.set(results, { clearProps: "all", opacity: 1 });
 
   // Timeline master
   const masterTL = gsap.timeline();
@@ -414,20 +454,22 @@ function animateResultsEntrance() {
       "-=0.3"
     );
 
-    // Animar cada card
+    // Animar cada card desde abajo sin movimiento horizontal
     masterTL.from(
       responseCards,
       {
-        x: (index) => (index % 2 === 0 ? -120 : 120),
+        y: 60,
         opacity: 0,
-        scale: 0.85,
-        stagger: 0.08,
-        duration: 0.6,
-        ease: "back.out(1.3)",
-        clearProps: "all",
+        scale: 0.9,
+        stagger: 0.06,
+        duration: 0.5,
+        ease: "power2.out",
       },
       "-=0.2"
     );
+
+    // Asegurar que se limpien todas las transformaciones después de la animación
+    masterTL.set(responseCards, { clearProps: "transform,opacity" });
   } else {
     console.warn("⚠ No se encontraron response-cards para animar");
   }
@@ -520,13 +562,21 @@ function animateResultsEntrance() {
 }
 
 async function recordAndNext(decision) {
-  // Obtener la regla seleccionada
+  // Prevenir clics múltiples - deshabilitar botones inmediatamente
+  if (acceptBtn) acceptBtn.disabled = true;
+  if (rejectBtn) rejectBtn.disabled = true;
+
   const selectedRuleBtn = document.querySelector(".rule-btn.active");
   
-  if (!selectedRuleBtn) {
+  // If rejecting, a rule must be selected
+  if (decision === "reject" && !selectedRuleBtn) {
+    // Re-habilitar botones si falla la validación
+    if (acceptBtn && !document.querySelector(".rule-btn.active")) acceptBtn.disabled = false;
+    if (rejectBtn) rejectBtn.disabled = false;
+
     await Swal.fire({
       title: "Selección obligatoria",
-      text: "Por favor, selecciona una regla antes de continuar.",
+      text: "Debes seleccionar una regla para rechazar la imagen.",
       icon: "warning",
       confirmButtonText: "Entendido",
     });
@@ -553,14 +603,20 @@ async function recordAndNext(decision) {
     return;
   }
 
-  const selectedRule = selectedRuleBtn.dataset.ruleId;
-  const ruleName = selectedRuleBtn.textContent;
+  // Prepare response data
+  let ruleName = "Imagen aceptada";
+  let ruleId = null;
+
+  if (selectedRuleBtn) {
+    ruleId = selectedRuleBtn.dataset.ruleId;
+    ruleName = selectedRuleBtn.textContent.trim();
+  }
 
   responses.push({ 
     image: selected[index], 
     decision, 
     comment: ruleName,
-    ruleId: selectedRule 
+    ruleId: ruleId
   });
 
   gsap.to(".evaluator-card", {
@@ -575,6 +631,11 @@ async function recordAndNext(decision) {
           { y: 20, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.3 }
         );
+        // Re-habilitar botones después de la transición
+        setTimeout(() => {
+          if (rejectBtn) rejectBtn.disabled = false;
+          // acceptBtn se habilita en showImage
+        }, 300);
       } else {
         showResults();
       }
@@ -585,12 +646,15 @@ async function recordAndNext(decision) {
 function resetAll() {
   console.log("🔄 Reiniciando aplicación...");
   
+  // Matar todas las animaciones GSAP activas
+  gsap.killTweensOf("*");
+
   // Limpiar arrays de datos
   responses = [];
   selected = [];
-  allImages = [];  // Limpiar también allImages para forzar recarga
   index = 0;
-  
+  currentImageType = null;
+
   // Limpiar imagen del evaluador
   if (evalImage) {
     evalImage.src = "";
@@ -611,13 +675,35 @@ function resetAll() {
   if (progressBar) progressBar.style.width = "0%";
   if (progressText) progressText.textContent = "Imagen 0/0";
   
-  // Ocultar pantallas de evaluador y resultados
-  results.classList.add("d-none");
-  evaluator.classList.add("d-none");
-  startScreen.classList.remove("d-none");
-
-  // Re-habilitar el botón de inicio
+  // Re-habilitar botones
   if (startBtn) startBtn.disabled = false;
+  if (acceptBtn) acceptBtn.disabled = false;
+
+  // Limpiar todas las transformaciones GSAP de los contenedores principales
+  gsap.set([results, evaluator, startScreen, ".evaluator-card"], { clearProps: "all" });
+
+  // Limpiar todas las transformaciones de elementos internos de resultados
+  gsap.set(".results-container, .results-container *, .response-card, .glow-orb, .stat-item, .response-badge", {
+    clearProps: "all"
+  });
+
+  // OCULTAR COMPLETAMENTE evaluador y resultados
+  results.style.display = "none";
+  results.style.visibility = "hidden";
+  results.classList.add("d-none");
+
+  evaluator.style.display = "none";
+  evaluator.style.visibility = "hidden";
+  evaluator.classList.add("d-none");
+
+  // MOSTRAR pantalla de inicio
+  startScreen.style.display = "block";
+  startScreen.style.visibility = "visible";
+  startScreen.style.opacity = "1";
+  startScreen.style.transform = "none";
+  startScreen.style.zIndex = "999";
+  startScreen.style.position = "relative";
+  startScreen.classList.remove("d-none");
 
   // Animación de entrada
   gsap.from("#start-screen", { y: 20, opacity: 0, duration: 0.6 });
@@ -626,18 +712,21 @@ function resetAll() {
 }
 
 function renderRuleButtons() {
-  console.log("🎯 Renderizando botones de reglas...");
+  console.log("🎯 Renderizando botones de reglas para:", currentImageType);
   const container = document.querySelector(".rules-container-stacked");
-  
+
   if (!container) {
     console.error("⚠ No se encontró .rules-container-stacked");
     return;
   }
-  
+
   console.log("✓ Contenedor encontrado:", container);
   container.innerHTML = "";
-  
-  PREDEFINED_RULES.forEach((rule) => {
+
+  // Seleccionar el set de reglas apropiado
+  const rulesToUse = currentImageType === "skin" ? SKIN_RULES : GAMEMODE_RULES;
+
+  rulesToUse.forEach((rule) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "rule-btn";
@@ -647,13 +736,22 @@ function renderRuleButtons() {
       <span class="rule-icon">${rule.icon}</span>
       <span class="rule-label">${rule.label}</span>
     `;
-    
+
     btn.addEventListener("click", () => {
-      // Desactivar otros botones
-      document.querySelectorAll(".rule-btn").forEach((b) => b.classList.remove("active"));
-      // Activar este botón
-      btn.classList.add("active");
-      
+      // Si el botón ya está activo, deseleccionarlo
+      if (btn.classList.contains("active")) {
+        btn.classList.remove("active");
+        // Re-habilitar botón de aceptar cuando se deselecciona
+        if (acceptBtn) acceptBtn.disabled = false;
+      } else {
+        // Desactivar otros botones
+        document.querySelectorAll(".rule-btn").forEach((b) => b.classList.remove("active"));
+        // Activar este botón
+        btn.classList.add("active");
+        // Deshabilitar botón de aceptar cuando se selecciona una regla
+        if (acceptBtn) acceptBtn.disabled = true;
+      }
+
       // Animación
       gsap.to(btn, {
         scale: 1.02,
@@ -664,11 +762,11 @@ function renderRuleButtons() {
         }
       });
     });
-    
+
     container.appendChild(btn);
   });
-  
-  console.log("✓ Botones renderizados:", PREDEFINED_RULES.length);
+
+  console.log("✓ Botones renderizados:", rulesToUse.length);
 }
 
 startBtn.addEventListener("click", async () => {
