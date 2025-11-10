@@ -2,6 +2,15 @@
 const IMAGES_JSON = "assets-taller/images.json";
 const TOTAL_TO_SHOW = 10;
 
+// Reglas predefinidas para seleccionar
+const PREDEFINED_RULES = [
+  { id: 1, label: "✓ Contenido Apropiado", icon: "✓", color: "#2ee6a7" },
+  { id: 2, label: "✗ Contenido Ofensivo", icon: "✗", color: "#ff5e7c" },
+  { id: 3, label: "⚠ Necesita Revisión", icon: "⚠", color: "#ffd700" },
+  { id: 4, label: "❌ Violación de Normas", icon: "❌", color: "#ff3b4d" },
+  { id: 5, label: "✓ Excelente Calidad", icon: "⭐", color: "#00d4ff" },
+];
+
 let allImages = [];
 let selected = [];
 let index = 0;
@@ -35,23 +44,30 @@ async function loadImages() {
     if (!res.ok) throw new Error("No se pudo cargar images.json");
     const data = await res.json();
     allImages = data;
+    console.log("✓ Imágenes cargadas:", allImages.length);
   } catch (e) {
-    console.error(e);
+    console.error("❌ Error loading images:", e);
     await Swal.fire({
       title: "Error",
       text: "Error cargando las imágenes. Asegúrate de ejecutar desde un servidor local (no file://).",
       icon: "error",
     });
+    allImages = [];
   }
 }
 
 function pickImages() {
+  if (allImages.length === 0) {
+    console.error("❌ allImages vacío");
+    return;
+  }
+
   // Separar imágenes por categoría (skins y gamemodes)
   const skins = allImages.filter((img) => img.includes("/skins/"));
   const gamemodes = allImages.filter((img) => img.includes("/gamemodes/"));
 
-  console.log("Total skins:", skins.length);
-  console.log("Total gamemodes:", gamemodes.length);
+  console.log("📊 Total skins:", skins.length);
+  console.log("📊 Total gamemodes:", gamemodes.length);
 
   // Mezclar cada categoría
   shuffle(skins);
@@ -74,7 +90,7 @@ function pickImages() {
     }
   }
 
-  console.log("Imágenes seleccionadas en orden:", selected);
+  console.log("✓ Imágenes seleccionadas:", selected.length, selected);
 }
 
 function updateProgress() {
@@ -84,18 +100,34 @@ function updateProgress() {
 }
 
 function showImage(i) {
-  if (i < 0 || i >= selected.length) return;
+  if (i < 0 || i >= selected.length) {
+    console.error("❌ showImage: índice inválido", i);
+    return;
+  }
   index = i;
-  commentEl.value = "";
+  
+  // Resetear selección de regla
+  if (commentEl) commentEl.value = "";
+  const ruleButtons = document.querySelectorAll(".rule-btn");
+  ruleButtons.forEach((btn) => btn.classList.remove("active"));
+  
   updateProgress();
+  
+  const imagePath = selected[index];
+  console.log("📸 Mostrando imagen:", imagePath);
+
   // animate image change with a small scale pulse
   gsap.to("#eval-image", {
     scale: 0.96,
     duration: 0.12,
     opacity: 0,
     onComplete: () => {
-      evalImage.src = selected[index];
+      evalImage.src = imagePath;
       evalImage.alt = `Imagen ${index + 1}`;
+      evalImage.onerror = () => {
+        console.error("❌ Error loading image:", imagePath);
+        evalImage.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23333' width='400' height='300'/%3E%3Ctext x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%23fff' font-size='20'%3EImagen no encontrada%3C/text%3E%3C/svg%3E";
+      };
       gsap.to("#eval-image", {
         scale: 1,
         opacity: 1,
@@ -144,28 +176,42 @@ async function showResults() {
     </div>
   `;
 
-  // Build list HTML
-  let listHTML =
-    '<div class="text-start mx-auto response-list" style="max-width:720px"><ol class="custom-list">';
+  // Build list HTML con 2 columnas y imágenes
+  let listHTML = `
+    <div class="response-list-wrapper">
+      <div class="response-grid">
+  `;
+  
   responses.forEach((r, idx) => {
-    const decisionClass =
-      r.decision === "accept" ? "decision-accept" : "decision-reject";
+    const decisionClass = r.decision === "accept" ? "decision-accept" : "decision-reject";
+    const badgeText = r.decision === "accept" ? "✓ APROBADA" : "✗ RECHAZADA";
+    const badgeIcon = r.decision === "accept" ? "✓" : "✗";
+    
     listHTML += `
-      <li class="list-item ${decisionClass}" data-index="${idx}">
-        <div class="list-item-content">
-          <div class="decision-badge ${decisionClass}">${
-      r.decision === "accept" ? "✓ ACEPTADA" : "✗ RECHAZADA"
-    }</div>
-          <code class="image-path">${r.image}</code>
-          <div class="comment-section">
-            <div class="comment-label">Justificación:</div>
-            <div class="comment-text">${r.comment}</div>
+      <div class="response-card ${decisionClass}" data-index="${idx}">
+        <div class="response-badge-col">
+          <div class="response-badge ${decisionClass}">
+            <span class="badge-icon">${badgeIcon}</span>
+            <span class="badge-text">${badgeText}</span>
           </div>
         </div>
-      </li>
+        <div class="response-content-col">
+          <div class="response-image-wrap">
+            <img src="${r.image}" alt="respuesta-${idx}" class="response-thumb" />
+          </div>
+          <div class="response-meta">
+            <div class="response-path">${r.image.split("/").pop()}</div>
+            <div class="response-rule">${r.comment}</div>
+          </div>
+        </div>
+      </div>
     `;
   });
-  listHTML += "</ol></div>";
+
+  listHTML += `
+      </div>
+    </div>
+  `;
 
   document.querySelector(".summary-stats").innerHTML = statsHTML;
   document.querySelector(".summary-list").innerHTML = listHTML;
@@ -182,14 +228,14 @@ async function showResults() {
 function animateResultsEntrance() {
   // Verificar que los elementos existen
   const container = document.querySelector(".results-container");
-  const listItems = document.querySelectorAll(".list-item");
+  const responseCards = document.querySelectorAll(".response-card");
 
-  console.log("Iniciando animaciones...");
+  console.log("🎬 Iniciando animaciones de resultados...");
   console.log("Contenedor:", container);
-  console.log("Items encontrados:", listItems.length);
+  console.log("Cards encontradas:", responseCards.length);
 
   if (!container) {
-    console.error("No se encontró .results-container");
+    console.error("❌ No se encontró .results-container");
     return;
   }
 
@@ -329,13 +375,13 @@ function animateResultsEntrance() {
     ease: "sine.inOut",
   });
 
-  // 7. Lista de respuestas
-  if (listItems.length > 0) {
-    console.log("Animando", listItems.length, "items");
+  // 7. Response cards (nuevas)
+  if (responseCards.length > 0) {
+    console.log("🎨 Animando", responseCards.length, "response cards");
 
     // Contenedor de lista
     masterTL.from(
-      ".response-list",
+      ".response-list-wrapper",
       {
         opacity: 0,
         y: 20,
@@ -345,29 +391,28 @@ function animateResultsEntrance() {
       "-=0.3"
     );
 
-    // Animar cada item
+    // Animar cada card
     masterTL.from(
-      listItems,
+      responseCards,
       {
-        x: (index) => (index % 2 === 0 ? -100 : 100),
+        x: (index) => (index % 2 === 0 ? -120 : 120),
         opacity: 0,
-        scale: 0.9,
-        stagger: 0.1,
-        duration: 0.5,
+        scale: 0.85,
+        stagger: 0.08,
+        duration: 0.6,
         ease: "back.out(1.3)",
         clearProps: "all",
       },
       "-=0.2"
     );
   } else {
-    console.warn("No se encontraron items para animar");
+    console.warn("⚠ No se encontraron response-cards para animar");
   }
 
   // 8. Botón de inicio - SOLO UNO
   const homeButton = document.getElementById("home-btn");
 
-  console.log("🔍 DEBUG - Botón encontrado:");
-  console.log("home-btn:", homeButton);
+  console.log("🔍 DEBUG - Botón encontrado:", homeButton);
 
   masterTL.from(
     ".results-actions",
@@ -420,27 +465,25 @@ function animateResultsEntrance() {
     });
   }
 
-  // Hover en list items
-  listItems.forEach((item) => {
-    item.addEventListener("mouseenter", () => {
-      gsap.to(item, {
+  // Hover en response cards (nuevas)
+  responseCards.forEach((card) => {
+    card.addEventListener("mouseenter", () => {
+      gsap.to(card, {
         scale: 1.02,
-        x: 5,
         duration: 0.3,
       });
     });
 
-    item.addEventListener("mouseleave", () => {
-      gsap.to(item, {
+    card.addEventListener("mouseleave", () => {
+      gsap.to(card, {
         scale: 1,
-        x: 0,
         duration: 0.3,
       });
     });
   });
 
-  // Badges flotantes
-  const badges = document.querySelectorAll(".decision-badge");
+  // Badges flotantes (response-badge)
+  const badges = document.querySelectorAll(".response-badge");
   badges.forEach((badge, i) => {
     gsap.to(badge, {
       y: "random(-3, 3)",
@@ -454,19 +497,20 @@ function animateResultsEntrance() {
 }
 
 async function recordAndNext(decision) {
-  const comment = commentEl.value.trim();
-
-  if (!comment) {
+  // Obtener la regla seleccionada
+  const selectedRuleBtn = document.querySelector(".rule-btn.active");
+  
+  if (!selectedRuleBtn) {
     await Swal.fire({
-      title: "Comentario obligatorio",
-      text: "Por favor, escribe el por qué de tu decisión antes de continuar.",
+      title: "Selección obligatoria",
+      text: "Por favor, selecciona una regla antes de continuar.",
       icon: "warning",
       confirmButtonText: "Entendido",
     });
 
     gsap.fromTo(
-      commentEl,
-      { x: -10, borderColor: "#ff5e7c" },
+      ".rules-container",
+      { x: -10 },
       {
         x: 10,
         duration: 0.1,
@@ -474,16 +518,23 @@ async function recordAndNext(decision) {
         yoyo: true,
         ease: "power2.inOut",
         onComplete: () => {
-          gsap.to(commentEl, { x: 0, borderColor: "", duration: 0.2 });
+          gsap.to(".rules-container", { x: 0, duration: 0.2 });
         },
       }
     );
 
-    commentEl.focus();
     return;
   }
 
-  responses.push({ image: selected[index], decision, comment });
+  const selectedRule = selectedRuleBtn.dataset.ruleId;
+  const ruleName = selectedRuleBtn.textContent;
+
+  responses.push({ 
+    image: selected[index], 
+    decision, 
+    comment: ruleName,
+    ruleId: selectedRule 
+  });
 
   gsap.to(".evaluator-card", {
     y: -20,
@@ -518,11 +569,45 @@ function resetAll() {
   gsap.from("#start-screen", { y: 20, opacity: 0, duration: 0.6 });
 }
 
+function renderRuleButtons() {
+  const container = document.querySelector(".rules-container");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  PREDEFINED_RULES.forEach((rule) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "rule-btn";
+    btn.dataset.ruleId = rule.id;
+    btn.style.setProperty("--rule-color", rule.color);
+    btn.innerHTML = `
+      <span class="rule-icon">${rule.icon}</span>
+      <span class="rule-label">${rule.label}</span>
+    `;
+    
+    btn.addEventListener("click", () => {
+      // Desactivar otros botones
+      document.querySelectorAll(".rule-btn").forEach((b) => b.classList.remove("active"));
+      // Activar este botón
+      btn.classList.add("active");
+      
+      // Animación
+      gsap.to(btn, {
+        scale: 1.05,
+        duration: 0.15,
+        ease: "power2.out",
+      });
+    });
+    
+    container.appendChild(btn);
+  });
+}
+
 startBtn.addEventListener("click", async () => {
   startBtn.disabled = true;
   const result = await Swal.fire({
     title: "Listo para empezar?",
-    text: "Revisa 10 imágenes y responde honestamente.",
+    text: "Revisa 10 imágenes y selecciona la regla aplicable.",
     icon: "question",
     showCancelButton: true,
     confirmButtonText: "Sí, iniciar",
@@ -539,7 +624,18 @@ startBtn.addEventListener("click", async () => {
     return;
   }
   pickImages();
+  if (selected.length === 0) {
+    console.error("❌ No se seleccionaron imágenes");
+    startBtn.disabled = false;
+    await Swal.fire({
+      title: "Error",
+      text: "No hay imágenes para mostrar. Verifica la carpeta assets-taller.",
+      icon: "error",
+    });
+    return;
+  }
   await showEvaluator();
+  renderRuleButtons();
   showImage(0);
 });
 
