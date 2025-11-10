@@ -22,19 +22,12 @@
   <body>
     <main class="container py-5">
       <header class="site-top mb-4">
-        <div class="top-inner d-flex align-items-center justify-content-between">
-          <div class="logo">
+        <div class="top-inner text-center">
+          <div class="logo mx-auto">
             <!-- Texto estilo 'logo' sin usar marcas registradas -->
             <div class="logo-text">FORTNITE-LIKE</div>
             <div class="logo-sub">Evaluación Épica</div>
           </div>
-          <nav class="d-none d-md-block">
-            <ul class="nav gap-3">
-              <li class="nav-item"><a class="nav-link" href="#">Inicio</a></li>
-              <li class="nav-item"><a class="nav-link" href="#">Galería</a></li>
-              <li class="nav-item"><a class="nav-link" href="#">Resultados</a></li>
-            </ul>
-          </nav>
         </div>
       </header>
 
@@ -74,33 +67,44 @@
         </div>
 
         <div id="card" class="card shadow evaluator-card">
-          <div class="card-body text-center">
-            <div class="image-wrap mb-3">
-              <img
-                id="eval-image"
-                src=""
-                alt="imagen a evaluar"
-                class="img-fluid rounded"
-              />
-            </div>
-            <div class="mt-4 mb-4">
-              <label class="form-label fw-semibold mb-3">
-                <span class="text-danger">*</span> Selecciona la regla aplicable:
-              </label>
-              <div class="rules-container d-flex flex-wrap gap-2 justify-content-center">
-                <!-- Los botones se generan dinámicamente en JS -->
+          <div class="card-body">
+            <!-- Layout de 2 columnas -->
+            <div class="evaluator-grid">
+              <!-- Columna 1: Imagen -->
+              <div class="eval-image-column">
+                <div class="image-wrap">
+                  <img
+                    id="eval-image"
+                    src=""
+                    alt="imagen a evaluar"
+                    class="img-fluid rounded"
+                  />
+                </div>
               </div>
-              <small class="text-muted d-block mt-2">
-                Debes seleccionar una regla antes de continuar.
-              </small>
-            </div>
-            <div class="my-3 d-flex gap-3 justify-content-center">
-              <button id="accept-btn" class="btn btn-success btn-lg action-btn">
-                ✓ Aceptar
-              </button>
-              <button id="reject-btn" class="btn btn-danger btn-lg action-btn">
-                ✗ Rechazar
-              </button>
+
+              <!-- Columna 2: Reglas y Acciones -->
+              <div class="eval-rules-column">
+                <div class="rules-section">
+                  <label class="form-label fw-bold mb-3">
+                    <span class="text-danger">*</span> Selecciona la regla aplicable:
+                  </label>
+                  <div class="rules-container-stacked">
+                    <!-- Los botones se generan dinámicamente en JS -->
+                  </div>
+                  <small class="text-muted d-block mt-2 text-center">
+                    Debes seleccionar una regla antes de continuar.
+                  </small>
+                </div>
+
+                <div class="action-buttons-section mt-4">
+                  <button id="accept-btn" class="btn btn-success btn-lg action-btn w-100 mb-2">
+                    <span class="btn-icon">✓</span> Aceptar
+                  </button>
+                  <button id="reject-btn" class="btn btn-danger btn-lg action-btn w-100">
+                    <span class="btn-icon">✗</span> Rechazar
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

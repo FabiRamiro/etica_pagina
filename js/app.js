@@ -40,19 +40,25 @@ function shuffle(arr) {
 
 async function loadImages() {
   try {
-    const res = await fetch(IMAGES_JSON);
+    console.log("📡 Haciendo fetch de", IMAGES_JSON);
+    // Añadir timestamp para evitar cache
+    const timestamp = new Date().getTime();
+    const res = await fetch(`${IMAGES_JSON}?t=${timestamp}`, {
+      cache: 'no-cache'
+    });
     if (!res.ok) throw new Error("No se pudo cargar images.json");
     const data = await res.json();
     allImages = data;
-    console.log("✓ Imágenes cargadas:", allImages.length);
+    console.log("✓ Imágenes cargadas:", allImages.length, "imágenes");
+    console.log("📋 Primeras 3:", allImages.slice(0, 3));
   } catch (e) {
     console.error("❌ Error loading images:", e);
+    allImages = [];
     await Swal.fire({
       title: "Error",
       text: "Error cargando las imágenes. Asegúrate de ejecutar desde un servidor local (no file://).",
       icon: "error",
     });
-    allImages = [];
   }
 }
 
@@ -100,10 +106,18 @@ function updateProgress() {
 }
 
 function showImage(i) {
+  console.log("🖼️ showImage llamado con índice:", i);
+  
   if (i < 0 || i >= selected.length) {
-    console.error("❌ showImage: índice inválido", i);
+    console.error("❌ showImage: índice inválido", i, "selected.length:", selected.length);
     return;
   }
+  
+  if (!evalImage) {
+    console.error("❌ evalImage element not found!");
+    return;
+  }
+  
   index = i;
   
   // Resetear selección de regla
@@ -114,7 +128,7 @@ function showImage(i) {
   updateProgress();
   
   const imagePath = selected[index];
-  console.log("📸 Mostrando imagen:", imagePath);
+  console.log("📸 Mostrando imagen:", imagePath, "en elemento:", evalImage);
 
   // animate image change with a small scale pulse
   gsap.to("#eval-image", {
@@ -124,10 +138,17 @@ function showImage(i) {
     onComplete: () => {
       evalImage.src = imagePath;
       evalImage.alt = `Imagen ${index + 1}`;
+      console.log("✓ Imagen src asignado:", evalImage.src);
+      
       evalImage.onerror = () => {
         console.error("❌ Error loading image:", imagePath);
         evalImage.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23333' width='400' height='300'/%3E%3Ctext x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%23fff' font-size='20'%3EImagen no encontrada%3C/text%3E%3C/svg%3E";
       };
+      
+      evalImage.onload = () => {
+        console.log("✓ Imagen cargada exitosamente");
+      };
+      
       gsap.to("#eval-image", {
         scale: 1,
         opacity: 1,
@@ -139,6 +160,7 @@ function showImage(i) {
 }
 
 async function showEvaluator() {
+  console.log("🎬 Mostrando evaluador...");
   // animated intro using GSAP
   startScreen.classList.add("d-none");
   evaluator.classList.remove("d-none");
@@ -148,6 +170,7 @@ async function showEvaluator() {
     duration: 0.6,
     ease: "power3.out",
   });
+  console.log("✓ Evaluador visible");
 }
 
 async function showResults() {
@@ -508,20 +531,24 @@ async function recordAndNext(decision) {
       confirmButtonText: "Entendido",
     });
 
-    gsap.fromTo(
-      ".rules-container",
-      { x: -10 },
-      {
-        x: 10,
-        duration: 0.1,
-        repeat: 5,
-        yoyo: true,
-        ease: "power2.inOut",
-        onComplete: () => {
-          gsap.to(".rules-container", { x: 0, duration: 0.2 });
-        },
-      }
-    );
+    // Animar el contenedor de reglas
+    const rulesSection = document.querySelector(".rules-section");
+    if (rulesSection) {
+      gsap.fromTo(
+        rulesSection,
+        { x: -10 },
+        {
+          x: 10,
+          duration: 0.1,
+          repeat: 5,
+          yoyo: true,
+          ease: "power2.inOut",
+          onComplete: () => {
+            gsap.to(rulesSection, { x: 0, duration: 0.2 });
+          },
+        }
+      );
+    }
 
     return;
   }
@@ -556,24 +583,60 @@ async function recordAndNext(decision) {
 }
 
 function resetAll() {
+  console.log("🔄 Reiniciando aplicación...");
+  
+  // Limpiar arrays de datos
   responses = [];
   selected = [];
+  allImages = [];  // Limpiar también allImages para forzar recarga
   index = 0;
+  
+  // Limpiar imagen del evaluador
+  if (evalImage) {
+    evalImage.src = "";
+    evalImage.alt = "";
+  }
+  
+  // Limpiar contenedor de reglas
+  const rulesContainer = document.querySelector(".rules-container-stacked");
+  if (rulesContainer) {
+    rulesContainer.innerHTML = "";
+  }
+  
+  // Limpiar selección de reglas
+  const ruleButtons = document.querySelectorAll(".rule-btn");
+  ruleButtons.forEach((btn) => btn.classList.remove("active"));
+  
+  // Resetear progreso
+  if (progressBar) progressBar.style.width = "0%";
+  if (progressText) progressText.textContent = "Imagen 0/0";
+  
+  // Ocultar pantallas de evaluador y resultados
   results.classList.add("d-none");
   evaluator.classList.add("d-none");
   startScreen.classList.remove("d-none");
 
   // Re-habilitar el botón de inicio
-  startBtn.disabled = false;
+  if (startBtn) startBtn.disabled = false;
 
+  // Animación de entrada
   gsap.from("#start-screen", { y: 20, opacity: 0, duration: 0.6 });
+  
+  console.log("✓ Reinicio completo - estado limpio");
 }
 
 function renderRuleButtons() {
-  const container = document.querySelector(".rules-container");
-  if (!container) return;
+  console.log("🎯 Renderizando botones de reglas...");
+  const container = document.querySelector(".rules-container-stacked");
   
+  if (!container) {
+    console.error("⚠ No se encontró .rules-container-stacked");
+    return;
+  }
+  
+  console.log("✓ Contenedor encontrado:", container);
   container.innerHTML = "";
+  
   PREDEFINED_RULES.forEach((rule) => {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -593,18 +656,25 @@ function renderRuleButtons() {
       
       // Animación
       gsap.to(btn, {
-        scale: 1.05,
+        scale: 1.02,
         duration: 0.15,
         ease: "power2.out",
+        onComplete: () => {
+          gsap.to(btn, { scale: 1, duration: 0.1 });
+        }
       });
     });
     
     container.appendChild(btn);
   });
+  
+  console.log("✓ Botones renderizados:", PREDEFINED_RULES.length);
 }
 
 startBtn.addEventListener("click", async () => {
+  console.log("🎮 Botón inicio presionado");
   startBtn.disabled = true;
+  
   const result = await Swal.fire({
     title: "Listo para empezar?",
     text: "Revisa 10 imágenes y selecciona la regla aplicable.",
@@ -613,17 +683,30 @@ startBtn.addEventListener("click", async () => {
     confirmButtonText: "Sí, iniciar",
     cancelButtonText: "Cancelar",
   });
+  
   if (!result.isConfirmed) {
+    console.log("❌ Usuario canceló");
     startBtn.disabled = false;
     return;
   }
 
+  console.log("📥 Cargando imágenes...");
   await loadImages();
+  
   if (allImages.length === 0) {
+    console.error("❌ No se cargaron imágenes");
     startBtn.disabled = false;
+    await Swal.fire({
+      title: "Error",
+      text: "No se pudieron cargar las imágenes. Verifica la consola.",
+      icon: "error",
+    });
     return;
   }
+  
+  console.log("🎲 Seleccionando imágenes aleatorias...");
   pickImages();
+  
   if (selected.length === 0) {
     console.error("❌ No se seleccionaron imágenes");
     startBtn.disabled = false;
@@ -634,6 +717,8 @@ startBtn.addEventListener("click", async () => {
     });
     return;
   }
+  
+  console.log("✅ Todo listo, mostrando evaluador...");
   await showEvaluator();
   renderRuleButtons();
   showImage(0);

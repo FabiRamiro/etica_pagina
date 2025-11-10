@@ -34,26 +34,108 @@ main {
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
     border: 1px solid rgba(255, 255, 255, 0.04);
     padding: 1rem;
+    border-radius: 14px;
 }
 
-.image-wrap {
-    max-height: 420px;
+/* ====================================
+   EVALUATOR GRID - 2 COLUMNAS
+   ==================================== */
+.evaluator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.eval-image-column {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: sticky;
+    top: 20px;
 }
 
-/* Make the image container stand out on dark background and avoid "dark rectangle" artifacts */
+.eval-rules-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.rules-section {
+    background: linear-gradient(135deg, rgba(123, 97, 255, 0.08), rgba(0, 212, 255, 0.04));
+    border: 1px solid rgba(123, 97, 255, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.rules-section .form-label {
+    font-size: 1.1rem;
+    color: #fff;
+    text-align: center;
+    display: block;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.rules-container-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.action-buttons-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+
+.btn-icon {
+    font-size: 1.3em;
+    font-weight: 900;
+    margin-right: 0.5rem;
+}
+
+/* Responsive - móvil apila en 1 columna */
+@media (max-width: 768px) {
+    .evaluator-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .eval-image-column {
+        position: relative;
+        top: 0;
+    }
+
+    .rules-section {
+        padding: 1rem;
+    }
+}
+
 .image-wrap {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
-    padding: 12px;
-    border-radius: 10px;
+    max-height: 520px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.3), rgba(255, 255, 255, 0.02));
+    padding: 16px;
+    border-radius: 12px;
     overflow: hidden;
+    border: 2px solid rgba(123, 97, 255, 0.2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(123, 97, 255, 0.05);
 }
 
 #eval-image {
-    max-height: 420px;
-    width: auto;
+    max-height: 480px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+#eval-image:hover {
+    transform: scale(1.02);
 }
 
 .action-btn {
@@ -61,6 +143,32 @@ main {
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
     font-weight: 700;
     border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease;
+}
+
+.action-btn:hover::before {
+    width: 300%;
+    height: 300%;
+}
+
+.action-btn .btn-icon {
+    position: relative;
+    z-index: 1;
 }
 
 #start-btn {
@@ -191,16 +299,26 @@ main {
 }
 
 .site-top { margin-bottom: 1.2rem; }
+.site-top .top-inner {
+    padding: 1rem 0;
+}
+.site-top .logo {
+    display: inline-block;
+}
 .site-top .logo-text {
-    font-size: 1.45rem;
+    font-size: 1.8rem;
     color: #fff;
     text-transform: uppercase;
     letter-spacing: 2px;
-    text-shadow: 0 6px 18px rgba(123,97,255,0.18);
+    text-shadow: 0 6px 18px rgba(123,97,255,0.3), 0 2px 8px rgba(0,212,255,0.2);
+    font-weight: 900;
 }
-.site-top .logo-sub { font-size: 0.75rem; color: rgba(230,238,248,0.6); margin-top: 2px }
-.site-top .nav-link { color: rgba(230,238,248,0.75); font-weight:600 }
-.site-top .nav-link:hover { color: #fff }
+.site-top .logo-sub { 
+    font-size: 0.85rem; 
+    color: rgba(230,238,248,0.7); 
+    margin-top: 4px;
+    letter-spacing: 1px;
+}
 
 .subtitle {
     color: rgba(230, 238, 248, 0.8)
@@ -696,46 +814,72 @@ footer {
     margin: 1.2rem 0;
 }
 
+.rules-container-stacked .rule-btn,
 .rule-btn {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.8rem 1.4rem;
+    justify-content: flex-start;
+    gap: 0.8rem;
+    padding: 1rem 1.5rem;
     background: linear-gradient(135deg, rgba(123, 97, 255, 0.12), rgba(0, 212, 255, 0.06));
     border: 2px solid rgba(123, 97, 255, 0.2);
     border-radius: 12px;
     color: rgba(230, 238, 248, 0.8);
     font-weight: 600;
-    font-size: 0.95rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.5px;
+    width: 100%;
+    text-align: left;
+}
+
+.rules-container-stacked .rule-btn {
+    margin: 0;
 }
 
 .rule-btn:hover {
     border-color: var(--rule-color, #7b61ff);
-    box-shadow: 0 0 20px rgba(123, 97, 255, 0.2);
-    transform: translateY(-3px);
+    box-shadow: 0 0 20px rgba(123, 97, 255, 0.3);
+    transform: translateX(5px);
+    background: linear-gradient(135deg, rgba(123, 97, 255, 0.18), rgba(0, 212, 255, 0.1));
 }
 
 .rule-btn.active {
     background: linear-gradient(135deg, var(--rule-color, #7b61ff), rgba(0, 212, 255, 0.5));
     border-color: var(--rule-color, #7b61ff);
     color: #fff;
-    box-shadow: 0 10px 30px var(--rule-color);
+    box-shadow: 0 8px 25px var(--rule-color), inset 0 0 20px rgba(255, 255, 255, 0.1);
     text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transform: translateX(5px) scale(1.02);
+}
+
+.rule-btn.active .rule-icon {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.15);
+    }
 }
 
 .rule-icon {
-    font-size: 1.1em;
+    font-size: 1.4em;
     display: inline-block;
+    min-width: 24px;
+    text-align: center;
 }
 
 .rule-label {
-    font-weight: 700;
+    font-weight: 600;
+    flex: 1;
 }
 
 /* ====================================
@@ -911,12 +1055,21 @@ footer {
     }
 
     .rule-btn {
-        padding: 0.7rem 1rem;
-        font-size: 0.85rem;
+        padding: 0.9rem 1.2rem;
+        font-size: 0.95rem;
     }
 
-    .rules-container {
-        gap: 0.8rem !important;
+    .rules-container,
+    .rules-container-stacked {
+        gap: 0.7rem !important;
+    }
+
+    .image-wrap {
+        max-height: 350px;
+    }
+
+    #eval-image {
+        max-height: 320px;
     }
 }
 
