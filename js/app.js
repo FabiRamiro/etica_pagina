@@ -142,8 +142,9 @@ function showImage(i) {
   currentImageType = imagePath.includes("/skins/") ? "skin" : "gamemode";
   renderRuleButtons();
 
-  // Re-enable accept button when showing new image
+  // Re-enable both buttons when showing new image
   if (acceptBtn) acceptBtn.disabled = false;
+  if (rejectBtn) rejectBtn.disabled = false;
 
   // animate image change with a small scale pulse
   gsap.to("#eval-image", {
@@ -468,8 +469,15 @@ function animateResultsEntrance() {
       "-=0.2"
     );
 
-    // Asegurar que se limpien todas las transformaciones después de la animación
-    masterTL.set(responseCards, { clearProps: "transform,opacity" });
+    // Asegurar que se limpien TODAS las transformaciones después de la animación
+    masterTL.call(() => {
+      responseCards.forEach(card => {
+        gsap.set(card, { clearProps: "all" });
+        // Forzar reseteo de estilo inline
+        card.style.transform = "";
+        card.style.opacity = "";
+      });
+    });
   } else {
     console.warn("⚠ No se encontraron response-cards para animar");
   }
@@ -525,55 +533,70 @@ function animateResultsEntrance() {
       gsap.to(homeButton, {
         scale: 1,
         boxShadow: "0 10px 30px rgba(46, 230, 167, 0.3)",
-        duration: 0.3,
+        duration: 0.2,
       });
     });
   }
 
-  // Hover en response cards (nuevas)
-  responseCards.forEach((card) => {
-    card.addEventListener("mouseenter", () => {
-      gsap.to(card, {
-        scale: 1.02,
-        duration: 0.3,
-      });
-    });
+  // Callback final: asegurar que todas las cards y sus hijos estén en posición correcta
+  masterTL.call(() => {
+    console.log("✅ Animaciones completadas - limpiando estilos finales");
 
-    card.addEventListener("mouseleave", () => {
-      gsap.to(card, {
-        scale: 1,
-        duration: 0.3,
-      });
+    // Detener todas las animaciones GSAP infinitas primero
+    gsap.killTweensOf(".response-badge");
+    gsap.killTweensOf(".stat-icon");
+
+    responseCards.forEach(card => {
+      // Limpiar cualquier transformación residual de la card
+      gsap.set(card, { clearProps: "all" });
+      card.style.transform = "";
+      card.style.opacity = "1";
+      card.style.translate = "none";
+      card.style.rotate = "none";
+      card.style.scale = "none";
+
+      // Limpiar también los badges dentro de cada card
+      const badge = card.querySelector(".response-badge");
+      if (badge) {
+        gsap.set(badge, { clearProps: "all" });
+        badge.style.transform = "";
+        badge.style.translate = "none";
+        badge.style.rotate = "none";
+        badge.style.scale = "none";
+      }
     });
   });
 
-  // Badges flotantes (response-badge)
-  const badges = document.querySelectorAll(".response-badge");
-  badges.forEach((badge, i) => {
-    gsap.to(badge, {
-      y: "random(-3, 3)",
-      duration: "random(2, 3)",
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-      delay: i * 0.1,
+  // Agregar pequeño delay antes de habilitar hovers
+  masterTL.call(() => {
+    // Hover en response cards (solo después de que las animaciones terminen)
+    responseCards.forEach((card) => {
+      card.addEventListener("mouseenter", () => {
+        gsap.to(card, {
+          y: -4,
+          duration: 0.3,
+          ease: "power2.out",
+          overwrite: true
+        });
+      });
+
+      card.addEventListener("mouseleave", () => {
+        gsap.to(card, {
+          y: 0,
+          duration: 0.3,
+          ease: "power2.inOut",
+          overwrite: true
+        });
+      });
     });
-  });
+  }, null, "+=0.2");
 }
 
 async function recordAndNext(decision) {
-  // Prevenir clics múltiples - deshabilitar botones inmediatamente
-  if (acceptBtn) acceptBtn.disabled = true;
-  if (rejectBtn) rejectBtn.disabled = true;
-
   const selectedRuleBtn = document.querySelector(".rule-btn.active");
   
-  // If rejecting, a rule must be selected
+  // Validar si se intenta rechazar sin regla seleccionada
   if (decision === "reject" && !selectedRuleBtn) {
-    // Re-habilitar botones si falla la validación
-    if (acceptBtn && !document.querySelector(".rule-btn.active")) acceptBtn.disabled = false;
-    if (rejectBtn) rejectBtn.disabled = false;
-
     await Swal.fire({
       title: "Selección obligatoria",
       text: "Debes seleccionar una regla para rechazar la imagen.",
@@ -602,6 +625,10 @@ async function recordAndNext(decision) {
 
     return;
   }
+
+  // AHORA sí, deshabilitar botones para prevenir clics múltiples
+  if (acceptBtn) acceptBtn.disabled = true;
+  if (rejectBtn) rejectBtn.disabled = true;
 
   // Prepare response data
   let ruleName = "Imagen aceptada";
