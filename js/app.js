@@ -1,6 +1,6 @@
 // app.js — lógica de evaluación de imágenes con GSAP y SweetAlert2
 const IMAGES_JSON = "assets-taller/images.json";
-const TOTAL_TO_SHOW = 10;
+const TOTAL_TO_SHOW = 20;
 
 // Reglas para miniaturas (gamemodes)
 const GAMEMODE_RULES = [
@@ -802,7 +802,7 @@ startBtn.addEventListener("click", async () => {
   
   const result = await Swal.fire({
     title: "Listo para empezar?",
-    text: "Revisa 10 imágenes y selecciona la regla aplicable.",
+    text: "Revisa 20 imágenes y selecciona la regla aplicable.",
     icon: "question",
     showCancelButton: true,
     confirmButtonText: "Sí, iniciar",
