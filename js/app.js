@@ -2,11 +2,17 @@
 const IMAGES_JSON = "assets-taller/images.json";
 const TOTAL_TO_SHOW = 20;
 const CAPTCHA_PROBABILITY = 1.0; // 100% de probabilidad para pruebas
+// Mostrar CAPTCHA cada N respuestas (si es > 0). Si es 0 o undefined, se usa CAPTCHA_PROBABILITY
+const CAPTCHA_EVERY = 4;
 
 // ⚙️ CONFIGURACIÓN DEL CAPTCHA - MÚLTIPLES IMÁGENES
 const CAPTCHA_IMAGES = [
   "assets-taller/captcha-images/image.png",
   "assets-taller/captcha-images/logo.jpg",
+  "assets-taller/captcha-images/fortnite1.png",
+  "assets-taller/captcha-images/fortnite2.png",
+  "assets-taller/captcha-images/fortnite3.png",
+  "assets-taller/captcha-images/fortnite4.png",
 ];
 
 // Función para elegir imagen aleatoria
@@ -18,7 +24,12 @@ function getRandomCaptchaImage() {
 // Reglas para miniaturas (gamemodes)
 const GAMEMODE_RULES = [
   { id: 1, label: "Miniatura de mala calidad", icon: "❌", color: "#ff5e7c" },
-  { id: 2, label: "Contenido inapropiado para jóvenes", icon: "⚠️", color: "#ffd700" },
+  {
+    id: 2,
+    label: "Contenido inapropiado para jóvenes",
+    icon: "⚠️",
+    color: "#ffd700",
+  },
   { id: 3, label: "Usa marcas registradas", icon: "❌", color: "#ff3b4d" },
   { id: 4, label: "Miniatura engañosa", icon: "⚠️", color: "#ff9500" },
 ];
@@ -26,9 +37,19 @@ const GAMEMODE_RULES = [
 // Reglas para skins
 const SKIN_RULES = [
   { id: 5, label: "Personaje irreconocible", icon: "❌", color: "#ff5e7c" },
-  { id: 6, label: "Skin inapropiada para jóvenes", icon: "⚠️", color: "#ffd700" },
+  {
+    id: 6,
+    label: "Skin inapropiada para jóvenes",
+    icon: "⚠️",
+    color: "#ffd700",
+  },
   { id: 7, label: "Falta de respeto", icon: "❌", color: "#ff3b4d" },
-  { id: 8, label: "Copia de otro personaje o skin", icon: "⚠️", color: "#ff9500" },
+  {
+    id: 8,
+    label: "Copia de otro personaje o skin",
+    icon: "⚠️",
+    color: "#ff9500",
+  },
 ];
 
 let allImages = [];
@@ -64,7 +85,7 @@ async function loadImages() {
     console.log("📡 Haciendo fetch de", IMAGES_JSON);
     const timestamp = new Date().getTime();
     const res = await fetch(`${IMAGES_JSON}?t=${timestamp}`, {
-      cache: 'no-cache'
+      cache: "no-cache",
     });
     if (!res.ok) throw new Error("No se pudo cargar images.json");
     const data = await res.json();
@@ -121,25 +142,25 @@ function updateProgress() {
 
 function showImage(i) {
   console.log("🖼️ showImage llamado con índice:", i);
-  
+
   if (i < 0 || i >= selected.length) {
     console.error("❌ showImage: índice inválido", i);
     return;
   }
-  
+
   if (!evalImage) {
     console.error("❌ evalImage element not found!");
     return;
   }
-  
+
   index = i;
-  
+
   if (commentEl) commentEl.value = "";
   const ruleButtons = document.querySelectorAll(".rule-btn");
   ruleButtons.forEach((btn) => btn.classList.remove("active"));
-  
+
   updateProgress();
-  
+
   const imagePath = selected[index];
   console.log("📸 Mostrando imagen:", imagePath);
 
@@ -156,11 +177,11 @@ function showImage(i) {
     onComplete: () => {
       evalImage.src = imagePath;
       evalImage.alt = `Imagen ${index + 1}`;
-      
+
       evalImage.onerror = () => {
         console.error("❌ Error loading image:", imagePath);
       };
-      
+
       gsap.to("#eval-image", {
         scale: 1,
         opacity: 1,
@@ -233,13 +254,17 @@ async function showResults() {
     <div class="response-list-wrapper">
       <div class="response-grid">
   `;
-  
+
   responses.forEach((r, idx) => {
-    const decisionClass = r.decision === "accept" ? "decision-accept" : "decision-reject";
+    const decisionClass =
+      r.decision === "accept" ? "decision-accept" : "decision-reject";
     const badgeText = r.decision === "accept" ? "APROBADA" : "RECHAZADA";
     const badgeIcon = r.decision === "accept" ? "✓" : "✗";
-    
-    const ruleText = r.decision === "reject" ? `<div class="response-rule">${r.comment}</div>` : '';
+
+    const ruleText =
+      r.decision === "reject"
+        ? `<div class="response-rule">${r.comment}</div>`
+        : "";
 
     listHTML += `
       <div class="response-card ${decisionClass}" data-index="${idx}">
@@ -254,7 +279,7 @@ async function showResults() {
       </div>
     `;
   });
-  
+
   listHTML += `
       </div>
     </div>
@@ -262,56 +287,71 @@ async function showResults() {
 
   const statsWrapper = summary.querySelector(".summary-stats");
   const listWrapper = summary.querySelector(".summary-list");
-  
+
   if (statsWrapper) statsWrapper.innerHTML = statsHTML;
   if (listWrapper) listWrapper.innerHTML = listHTML;
 
-  gsap.from(".results-title", { 
-    y: -30, 
-    opacity: 0, 
-    duration: 0.8, 
-    ease: "power3.out" 
-  });
-  
-  gsap.from(".stats-card", { 
-    scale: 0.9, 
-    opacity: 0, 
-    duration: 0.6, 
-    delay: 0.2, 
-    ease: "back.out(1.4)" 
+  gsap.from(".results-title", {
+    y: -30,
+    opacity: 0,
+    duration: 0.8,
+    ease: "power3.out",
   });
 
-  gsap.from(".stat-number", { 
-    innerText: 0, 
-    duration: 1.5, 
-    delay: 0.4, 
+  gsap.from(".stats-card", {
+    scale: 0.9,
+    opacity: 0,
+    duration: 0.6,
+    delay: 0.2,
+    ease: "back.out(1.4)",
+  });
+
+  gsap.from(".stat-number", {
+    innerText: 0,
+    duration: 1.5,
+    delay: 0.4,
     ease: "power2.out",
-    snap: { innerText: 1 }
+    snap: { innerText: 1 },
   });
 
-  gsap.from(".response-card", { 
-    y: 50, 
-    opacity: 0, 
-    duration: 0.5, 
-    stagger: 0.08, 
-    delay: 0.6, 
-    ease: "power3.out" 
+  gsap.from(".response-card", {
+    y: 50,
+    opacity: 0,
+    duration: 0.5,
+    stagger: 0.08,
+    delay: 0.6,
+    ease: "power3.out",
   });
 
   const glow1 = document.querySelector(".glow-orb-1");
   const glow2 = document.querySelector(".glow-orb-2");
   const glow3 = document.querySelector(".glow-orb-3");
-  
-  if (glow1) gsap.from(glow1, { scale: 0, opacity: 0, duration: 2, ease: "power2.out" });
-  if (glow2) gsap.from(glow2, { scale: 0, opacity: 0, duration: 2, delay: 0.3, ease: "power2.out" });
-  if (glow3) gsap.from(glow3, { scale: 0, opacity: 0, duration: 2, delay: 0.6, ease: "power2.out" });
 
-  gsap.from(".home-btn", { 
-    scale: 0, 
-    opacity: 0, 
-    duration: 0.6, 
-    delay: 1.2, 
-    ease: "back.out(1.7)" 
+  if (glow1)
+    gsap.from(glow1, { scale: 0, opacity: 0, duration: 2, ease: "power2.out" });
+  if (glow2)
+    gsap.from(glow2, {
+      scale: 0,
+      opacity: 0,
+      duration: 2,
+      delay: 0.3,
+      ease: "power2.out",
+    });
+  if (glow3)
+    gsap.from(glow3, {
+      scale: 0,
+      opacity: 0,
+      duration: 2,
+      delay: 0.6,
+      ease: "power2.out",
+    });
+
+  gsap.from(".home-btn", {
+    scale: 0,
+    opacity: 0,
+    duration: 0.6,
+    delay: 1.2,
+    ease: "back.out(1.7)",
   });
 }
 
@@ -321,10 +361,10 @@ async function showResults() {
 
 async function showPuzzleCaptcha() {
   const selectedImage = getRandomCaptchaImage();
-  
+
   console.log("🧩 Mostrando puzzle CAPTCHA...");
   console.log("📸 Imagen seleccionada:", selectedImage);
-  
+
   const puzzleHTML = `
     <div class="puzzle-container">
       <div class="puzzle-title">🧩 Puzzle de Verificación</div>
@@ -342,21 +382,21 @@ async function showPuzzleCaptcha() {
     allowOutsideClick: false,
     allowEscapeKey: false,
     customClass: {
-      popup: 'puzzle-modal'
+      popup: "puzzle-modal",
     },
     didOpen: () => {
       initPuzzle(selectedImage);
-    }
+    },
   });
 }
 
 function initPuzzle(imageUrl) {
-  const grid = document.getElementById('puzzleGrid');
-  const timerEl = document.getElementById('puzzleTimer');
-  const correctEl = document.getElementById('puzzleCorrect');
-  
+  const grid = document.getElementById("puzzleGrid");
+  const timerEl = document.getElementById("puzzleTimer");
+  const correctEl = document.getElementById("puzzleCorrect");
+
   console.log("🎯 Inicializando puzzle");
-  
+
   let startTime = Date.now();
   let timerInterval = setInterval(() => {
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -365,34 +405,34 @@ function initPuzzle(imageUrl) {
 
   // Array para mantener el orden lógico de las piezas
   const pieceOrder = [];
-  
+
   for (let i = 0; i < 9; i++) {
-    const piece = document.createElement('div');
-    piece.className = 'puzzle-piece';
+    const piece = document.createElement("div");
+    piece.className = "puzzle-piece";
     piece.draggable = true;
     piece.dataset.correctPos = i;
     piece.dataset.pieceId = `piece-${i}`;
     piece.dataset.currentIndex = i;
-    
+
     const row = Math.floor(i / 3);
     const col = i % 3;
     piece.style.backgroundImage = `url(${imageUrl})`;
     piece.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
-    
+
     pieceOrder.push(piece);
   }
-  
+
   // Mezclar el orden
   shuffle(pieceOrder);
-  
+
   // Agregar todas las piezas al grid en orden mezclado
   pieceOrder.forEach((piece, idx) => {
     piece.dataset.currentIndex = idx;
     grid.appendChild(piece);
   });
-  
+
   console.log("✓ Puzzle inicializado");
-  
+
   checkPuzzle();
 
   let draggedPiece = null;
@@ -401,7 +441,7 @@ function initPuzzle(imageUrl) {
   function handleDragStart(e) {
     draggedPiece = this;
     draggedStartIndex = parseInt(this.dataset.currentIndex);
-    this.classList.add('dragging');
+    this.classList.add("dragging");
     console.log(`🎯 Arrastrando pieza desde índice: ${draggedStartIndex}`);
   }
 
@@ -414,24 +454,26 @@ function initPuzzle(imageUrl) {
     e.preventDefault();
     if (draggedPiece !== this && draggedPiece) {
       const targetIndex = parseInt(this.dataset.currentIndex);
-      
-      console.log(`🔄 Intercambiando índices: ${draggedStartIndex} ↔ ${targetIndex}`);
-      
+
+      console.log(
+        `🔄 Intercambiando índices: ${draggedStartIndex} ↔ ${targetIndex}`
+      );
+
       // Intercambiar los valores de currentIndex
       draggedPiece.dataset.currentIndex = targetIndex;
       this.dataset.currentIndex = draggedStartIndex;
-      
+
       // Actualizar el array pieceOrder
       const temp = pieceOrder[draggedStartIndex];
       pieceOrder[draggedStartIndex] = pieceOrder[targetIndex];
       pieceOrder[targetIndex] = temp;
-      
+
       // Limpiar y reconstruir el grid en el nuevo orden
-      grid.innerHTML = '';
-      pieceOrder.forEach(piece => {
+      grid.innerHTML = "";
+      pieceOrder.forEach((piece) => {
         grid.appendChild(piece);
       });
-      
+
       console.log("   ✓ Intercambio completado");
       checkPuzzle();
     }
@@ -439,61 +481,61 @@ function initPuzzle(imageUrl) {
   }
 
   function handleDragEnd(e) {
-    if (this.classList.contains('dragging')) {
-      this.classList.remove('dragging');
+    if (this.classList.contains("dragging")) {
+      this.classList.remove("dragging");
     }
     draggedPiece = null;
     draggedStartIndex = -1;
   }
 
   // Agregar event listeners
-  pieceOrder.forEach(piece => {
-    piece.addEventListener('dragstart', handleDragStart);
-    piece.addEventListener('dragover', handleDragOver);
-    piece.addEventListener('drop', handleDrop);
-    piece.addEventListener('dragend', handleDragEnd);
+  pieceOrder.forEach((piece) => {
+    piece.addEventListener("dragstart", handleDragStart);
+    piece.addEventListener("dragover", handleDragOver);
+    piece.addEventListener("drop", handleDrop);
+    piece.addEventListener("dragend", handleDragEnd);
   });
 
   function checkPuzzle() {
     let correct = 0;
     const gridChildren = Array.from(grid.children);
-    
+
     console.log("🔍 Validando puzzle...");
-    
+
     gridChildren.forEach((piece, currentDOMIndex) => {
       const correctPos = parseInt(piece.dataset.correctPos);
-      const isValid = (correctPos === currentDOMIndex);
-      
+      const isValid = correctPos === currentDOMIndex;
+
       if (isValid) {
-        piece.classList.add('correct');
+        piece.classList.add("correct");
         correct++;
       } else {
-        piece.classList.remove('correct');
+        piece.classList.remove("correct");
       }
     });
-    
+
     console.log(`📊 Resultado: ${correct}/9 piezas correctas`);
-    
+
     if (correctEl) correctEl.textContent = correct;
-    
+
     if (correct === 9) {
       console.log("🎉 ¡Puzzle completado!");
       clearInterval(timerInterval);
       const time = Math.floor((Date.now() - startTime) / 1000);
-      
+
       // Deshabilitar drag & drop
-      gridChildren.forEach(piece => {
+      gridChildren.forEach((piece) => {
         piece.draggable = false;
-        piece.style.cursor = 'default';
+        piece.style.cursor = "default";
       });
-      
+
       setTimeout(() => {
         Swal.fire({
-          title: '¡Puzzle completado!',
+          title: "¡Puzzle completado!",
           html: `Lo resolviste en <strong>${time}</strong> segundos`,
-          icon: 'success',
+          icon: "success",
           timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: false,
         }).then(() => {
           console.log("→ Continuando con siguiente imagen...");
           continuarDespuesDeCaptcha();
@@ -505,7 +547,7 @@ function initPuzzle(imageUrl) {
 
 function continuarDespuesDeCaptcha() {
   console.log("✅ CAPTCHA completado, continuando...");
-  
+
   if (index + 1 < selected.length) {
     showImage(index + 1);
     setTimeout(() => {
@@ -522,12 +564,12 @@ function continuarDespuesDeCaptcha() {
 
 async function recordAndNext(dec) {
   console.log(`📝 Registrando decisión: ${dec}`);
-  
+
   if (acceptBtn) acceptBtn.disabled = true;
   if (rejectBtn) rejectBtn.disabled = true;
 
   let comment = "";
-  
+
   if (dec === "reject") {
     const activeBtn = document.querySelector(".rule-btn.active");
     if (!activeBtn) {
@@ -562,8 +604,14 @@ async function recordAndNext(dec) {
     },
   });
 
-  const shouldShowCaptcha = Math.random() < CAPTCHA_PROBABILITY;
-  
+  // Decidir si mostramos captcha
+  // - Si CAPTCHA_EVERY está definido y > 0: mostrar cada N respuestas (ej. cada 3 respuestas)
+  // - Si CAPTCHA_EVERY es 0 o no está definido: usar la probabilidad aleatoria CAPTCHA_PROBABILITY
+  const shouldShowCaptcha =
+    typeof CAPTCHA_EVERY !== "undefined" && CAPTCHA_EVERY > 0
+      ? responses.length % CAPTCHA_EVERY === 0
+      : Math.random() < CAPTCHA_PROBABILITY;
+
   if (shouldShowCaptcha && index + 1 < selected.length) {
     console.log("🎲 ¡Activado CAPTCHA!");
     await showPuzzleCaptcha();
@@ -581,7 +629,7 @@ async function recordAndNext(dec) {
 
 function resetAll() {
   console.log("🔄 Reiniciando aplicación...");
-  
+
   gsap.killTweensOf("*");
 
   responses = [];
@@ -593,26 +641,31 @@ function resetAll() {
     evalImage.src = "";
     evalImage.alt = "";
   }
-  
+
   const rulesContainer = document.querySelector(".rules-container-stacked");
   if (rulesContainer) {
     rulesContainer.innerHTML = "";
   }
-  
+
   const ruleButtons = document.querySelectorAll(".rule-btn");
   ruleButtons.forEach((btn) => btn.classList.remove("active"));
-  
+
   if (progressBar) progressBar.style.width = "0%";
   if (progressText) progressText.textContent = "Imagen 0/0";
-  
+
   if (startBtn) startBtn.disabled = false;
   if (acceptBtn) acceptBtn.disabled = false;
 
-  gsap.set([results, evaluator, startScreen, ".evaluator-card"], { clearProps: "all" });
-
-  gsap.set(".results-container, .results-container *, .response-card, .glow-orb, .stat-item, .response-badge", {
-    clearProps: "all"
+  gsap.set([results, evaluator, startScreen, ".evaluator-card"], {
+    clearProps: "all",
   });
+
+  gsap.set(
+    ".results-container, .results-container *, .response-card, .glow-orb, .stat-item, .response-badge",
+    {
+      clearProps: "all",
+    }
+  );
 
   results.style.display = "none";
   results.style.visibility = "hidden";
@@ -631,7 +684,7 @@ function resetAll() {
   startScreen.classList.remove("d-none");
 
   gsap.from("#start-screen", { y: 20, opacity: 0, duration: 0.6 });
-  
+
   console.log("✓ Reinicio completo");
 }
 
@@ -664,7 +717,9 @@ function renderRuleButtons() {
         btn.classList.remove("active");
         if (acceptBtn) acceptBtn.disabled = false;
       } else {
-        document.querySelectorAll(".rule-btn").forEach((b) => b.classList.remove("active"));
+        document
+          .querySelectorAll(".rule-btn")
+          .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         if (acceptBtn) acceptBtn.disabled = true;
       }
@@ -675,7 +730,7 @@ function renderRuleButtons() {
         ease: "power2.out",
         onComplete: () => {
           gsap.to(btn, { scale: 1, duration: 0.1 });
-        }
+        },
       });
     });
 
@@ -688,7 +743,7 @@ function renderRuleButtons() {
 startBtn.addEventListener("click", async () => {
   console.log("🎮 Botón inicio presionado");
   startBtn.disabled = true;
-  
+
   const result = await Swal.fire({
     title: "Listo para empezar?",
     text: "Revisa 20 imágenes y selecciona la regla aplicable.",
@@ -697,7 +752,7 @@ startBtn.addEventListener("click", async () => {
     confirmButtonText: "Sí, iniciar",
     cancelButtonText: "Cancelar",
   });
-  
+
   if (!result.isConfirmed) {
     console.log("❌ Usuario canceló");
     startBtn.disabled = false;
@@ -706,7 +761,7 @@ startBtn.addEventListener("click", async () => {
 
   console.log("🔥 Cargando imágenes...");
   await loadImages();
-  
+
   if (allImages.length === 0) {
     console.error("❌ No se cargaron imágenes");
     startBtn.disabled = false;
@@ -717,10 +772,10 @@ startBtn.addEventListener("click", async () => {
     });
     return;
   }
-  
+
   console.log("🎲 Seleccionando imágenes aleatorias...");
   pickImages();
-  
+
   if (selected.length === 0) {
     console.error("❌ No se seleccionaron imágenes");
     startBtn.disabled = false;
@@ -731,7 +786,7 @@ startBtn.addEventListener("click", async () => {
     });
     return;
   }
-  
+
   console.log("✅ Todo listo, mostrando evaluador...");
   await showEvaluator();
   renderRuleButtons();
