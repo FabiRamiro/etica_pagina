@@ -1,6 +1,19 @@
-// app.js — lógica de evaluación de imágenes con GSAP y SweetAlert2
+// app.js – lógica de evaluación de imágenes con GSAP y SweetAlert2
 const IMAGES_JSON = "assets-taller/images.json";
 const TOTAL_TO_SHOW = 20;
+const CAPTCHA_PROBABILITY = 1.0; // 100% de probabilidad para pruebas
+
+// ⚙️ CONFIGURACIÓN DEL CAPTCHA - MÚLTIPLES IMÁGENES
+const CAPTCHA_IMAGES = [
+  "assets-taller/captcha-images/image.png",
+  "assets-taller/captcha-images/logo.jpg",
+];
+
+// Función para elegir imagen aleatoria
+function getRandomCaptchaImage() {
+  const randomIndex = Math.floor(Math.random() * CAPTCHA_IMAGES.length);
+  return CAPTCHA_IMAGES[randomIndex];
+}
 
 // Reglas para miniaturas (gamemodes)
 const GAMEMODE_RULES = [
@@ -22,7 +35,7 @@ let allImages = [];
 let selected = [];
 let index = 0;
 let responses = [];
-let currentImageType = null; // 'gamemode' or 'skin'
+let currentImageType = null;
 
 const startBtn = document.getElementById("start-btn");
 const evaluator = document.getElementById("evaluator");
@@ -49,7 +62,6 @@ function shuffle(arr) {
 async function loadImages() {
   try {
     console.log("📡 Haciendo fetch de", IMAGES_JSON);
-    // Añadir timestamp para evitar cache
     const timestamp = new Date().getTime();
     const res = await fetch(`${IMAGES_JSON}?t=${timestamp}`, {
       cache: 'no-cache'
@@ -58,7 +70,6 @@ async function loadImages() {
     const data = await res.json();
     allImages = data;
     console.log("✓ Imágenes cargadas:", allImages.length, "imágenes");
-    console.log("📋 Primeras 3:", allImages.slice(0, 3));
   } catch (e) {
     console.error("❌ Error loading images:", e);
     allImages = [];
@@ -76,18 +87,15 @@ function pickImages() {
     return;
   }
 
-  // Separar imágenes por categoría (skins y gamemodes)
   const skins = allImages.filter((img) => img.includes("/skins/"));
   const gamemodes = allImages.filter((img) => img.includes("/gamemodes/"));
 
   console.log("📊 Total skins:", skins.length);
   console.log("📊 Total gamemodes:", gamemodes.length);
 
-  // Mezclar cada categoría
   shuffle(skins);
   shuffle(gamemodes);
 
-  // Alternar: skin, gamemode, skin, gamemode...
   selected = [];
   const count = Math.min(
     TOTAL_TO_SHOW,
@@ -96,15 +104,13 @@ function pickImages() {
 
   for (let i = 0; i < count; i++) {
     if (i % 2 === 0) {
-      // Posición par = skin
       selected.push(skins[Math.floor(i / 2)]);
     } else {
-      // Posición impar = gamemode
       selected.push(gamemodes[Math.floor(i / 2)]);
     }
   }
 
-  console.log("✓ Imágenes seleccionadas:", selected.length, selected);
+  console.log("✓ Imágenes seleccionadas:", selected.length);
 }
 
 function updateProgress() {
@@ -117,7 +123,7 @@ function showImage(i) {
   console.log("🖼️ showImage llamado con índice:", i);
   
   if (i < 0 || i >= selected.length) {
-    console.error("❌ showImage: índice inválido", i, "selected.length:", selected.length);
+    console.error("❌ showImage: índice inválido", i);
     return;
   }
   
@@ -128,7 +134,6 @@ function showImage(i) {
   
   index = i;
   
-  // Resetear selección de regla
   if (commentEl) commentEl.value = "";
   const ruleButtons = document.querySelectorAll(".rule-btn");
   ruleButtons.forEach((btn) => btn.classList.remove("active"));
@@ -136,17 +141,14 @@ function showImage(i) {
   updateProgress();
   
   const imagePath = selected[index];
-  console.log("📸 Mostrando imagen:", imagePath, "en elemento:", evalImage);
+  console.log("📸 Mostrando imagen:", imagePath);
 
-  // Determinar tipo de imagen y renderizar reglas apropiadas
   currentImageType = imagePath.includes("/skins/") ? "skin" : "gamemode";
   renderRuleButtons();
 
-  // Re-enable both buttons when showing new image
   if (acceptBtn) acceptBtn.disabled = false;
   if (rejectBtn) rejectBtn.disabled = false;
 
-  // animate image change with a small scale pulse
   gsap.to("#eval-image", {
     scale: 0.96,
     duration: 0.12,
@@ -154,15 +156,9 @@ function showImage(i) {
     onComplete: () => {
       evalImage.src = imagePath;
       evalImage.alt = `Imagen ${index + 1}`;
-      console.log("✓ Imagen src asignado:", evalImage.src);
       
       evalImage.onerror = () => {
         console.error("❌ Error loading image:", imagePath);
-        evalImage.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23333' width='400' height='300'/%3E%3Ctext x='50%' y='50%' text-anchor='middle' dy='.3em' fill='%23fff' font-size='20'%3EImagen no encontrada%3C/text%3E%3C/svg%3E";
-      };
-      
-      evalImage.onload = () => {
-        console.log("✓ Imagen cargada exitosamente");
       };
       
       gsap.to("#eval-image", {
@@ -178,15 +174,12 @@ function showImage(i) {
 async function showEvaluator() {
   console.log("🎬 Mostrando evaluador...");
 
-  // Limpiar animaciones GSAP del startScreen
   gsap.killTweensOf(startScreen);
 
-  // OCULTAR startScreen completamente
   startScreen.style.display = "none";
   startScreen.style.visibility = "hidden";
   startScreen.classList.add("d-none");
 
-  // MOSTRAR evaluator
   evaluator.style.display = "block";
   evaluator.style.visibility = "visible";
   evaluator.style.opacity = "1";
@@ -202,30 +195,24 @@ async function showEvaluator() {
 }
 
 async function showResults() {
-  // Limpiar animaciones previas
   gsap.killTweensOf("*");
 
-  // Ir directo a la página de resultados sin modal
   const accepted = responses.filter((r) => r.decision === "accept").length;
   const rejected = responses.filter((r) => r.decision === "reject").length;
 
-  // Limpiar animaciones GSAP del evaluator
   gsap.killTweensOf(evaluator);
   gsap.killTweensOf(".evaluator-card");
 
-  // OCULTAR evaluador completamente
   evaluator.style.display = "none";
   evaluator.style.visibility = "hidden";
   evaluator.classList.add("d-none");
 
-  // MOSTRAR resultados
   results.style.display = "block";
   results.style.visibility = "visible";
   results.style.opacity = "1";
   results.style.zIndex = "1";
   results.classList.remove("d-none");
 
-  // Build stats HTML
   const statsHTML = `
     <div class="stats-card">
       <div class="stat-item accepted-stat">
@@ -242,7 +229,6 @@ async function showResults() {
     </div>
   `;
 
-  // Build list HTML con 2 columnas y imágenes
   let listHTML = `
     <div class="response-list-wrapper">
       <div class="response-grid">
@@ -253,7 +239,6 @@ async function showResults() {
     const badgeText = r.decision === "accept" ? "APROBADA" : "RECHAZADA";
     const badgeIcon = r.decision === "accept" ? "✓" : "✗";
     
-    // Solo mostrar el comentario si es un rechazo
     const ruleText = r.decision === "reject" ? `<div class="response-rule">${r.comment}</div>` : '';
 
     listHTML += `
@@ -263,458 +248,372 @@ async function showResults() {
           <span class="badge-text">${badgeText}</span>
         </div>
         <div class="response-image-wrap">
-          <img src="${r.image}" alt="respuesta-${idx}" class="response-thumb" />
+          <img src="${r.image}" alt="Imagen ${idx + 1}" class="response-thumb">
         </div>
         ${ruleText}
       </div>
     `;
   });
-
+  
   listHTML += `
       </div>
     </div>
   `;
 
-  document.querySelector(".summary-stats").innerHTML = statsHTML;
-  document.querySelector(".summary-list").innerHTML = listHTML;
+  const statsWrapper = summary.querySelector(".summary-stats");
+  const listWrapper = summary.querySelector(".summary-list");
+  
+  if (statsWrapper) statsWrapper.innerHTML = statsHTML;
+  if (listWrapper) listWrapper.innerHTML = listHTML;
 
-  // Scroll to top
-  window.scrollTo(0, 0);
+  gsap.from(".results-title", { 
+    y: -30, 
+    opacity: 0, 
+    duration: 0.8, 
+    ease: "power3.out" 
+  });
+  
+  gsap.from(".stats-card", { 
+    scale: 0.9, 
+    opacity: 0, 
+    duration: 0.6, 
+    delay: 0.2, 
+    ease: "back.out(1.4)" 
+  });
 
-  // EPIC ANIMATIONS START HERE - con delay para asegurar renderizado
-  setTimeout(() => {
-    animateResultsEntrance();
-  }, 50);
+  gsap.from(".stat-number", { 
+    innerText: 0, 
+    duration: 1.5, 
+    delay: 0.4, 
+    ease: "power2.out",
+    snap: { innerText: 1 }
+  });
+
+  gsap.from(".response-card", { 
+    y: 50, 
+    opacity: 0, 
+    duration: 0.5, 
+    stagger: 0.08, 
+    delay: 0.6, 
+    ease: "power3.out" 
+  });
+
+  const glow1 = document.querySelector(".glow-orb-1");
+  const glow2 = document.querySelector(".glow-orb-2");
+  const glow3 = document.querySelector(".glow-orb-3");
+  
+  if (glow1) gsap.from(glow1, { scale: 0, opacity: 0, duration: 2, ease: "power2.out" });
+  if (glow2) gsap.from(glow2, { scale: 0, opacity: 0, duration: 2, delay: 0.3, ease: "power2.out" });
+  if (glow3) gsap.from(glow3, { scale: 0, opacity: 0, duration: 2, delay: 0.6, ease: "power2.out" });
+
+  gsap.from(".home-btn", { 
+    scale: 0, 
+    opacity: 0, 
+    duration: 0.6, 
+    delay: 1.2, 
+    ease: "back.out(1.7)" 
+  });
 }
 
-function animateResultsEntrance() {
-  // Verificar que los elementos existen
-  const container = document.querySelector(".results-container");
-  const responseCards = document.querySelectorAll(".response-card");
+// ====================================
+// SISTEMA DE PUZZLE CAPTCHA
+// ====================================
 
-  console.log("🎬 Iniciando animaciones de resultados...");
-  console.log("Contenedor:", container);
-  console.log("Cards encontradas:", responseCards.length);
+async function showPuzzleCaptcha() {
+  const selectedImage = getRandomCaptchaImage();
+  
+  console.log("🧩 Mostrando puzzle CAPTCHA...");
+  console.log("📸 Imagen seleccionada:", selectedImage);
+  
+  const puzzleHTML = `
+    <div class="puzzle-container">
+      <div class="puzzle-title">🧩 Puzzle de Verificación</div>
+      <div class="puzzle-subtitle">Arrastra las piezas para completar el logo</div>
+      <div class="puzzle-grid" id="puzzleGrid"></div>
+      <div class="puzzle-timer">Tiempo: <span id="puzzleTimer">0</span>s</div>
+      <div class="puzzle-progress"><span id="puzzleCorrect">0</span>/9 piezas correctas</div>
+    </div>
+  `;
 
-  if (!container) {
-    console.error("❌ No se encontró .results-container");
-    return;
+  Swal.fire({
+    html: puzzleHTML,
+    showConfirmButton: false,
+    showCloseButton: false,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    customClass: {
+      popup: 'puzzle-modal'
+    },
+    didOpen: () => {
+      initPuzzle(selectedImage);
+    }
+  });
+}
+
+function initPuzzle(imageUrl) {
+  const grid = document.getElementById('puzzleGrid');
+  const timerEl = document.getElementById('puzzleTimer');
+  const correctEl = document.getElementById('puzzleCorrect');
+  
+  console.log("🎯 Inicializando puzzle");
+  
+  let startTime = Date.now();
+  let timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    if (timerEl) timerEl.textContent = elapsed;
+  }, 1000);
+
+  // Array para mantener el orden lógico de las piezas
+  const pieceOrder = [];
+  
+  for (let i = 0; i < 9; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'puzzle-piece';
+    piece.draggable = true;
+    piece.dataset.correctPos = i;
+    piece.dataset.pieceId = `piece-${i}`;
+    piece.dataset.currentIndex = i;
+    
+    const row = Math.floor(i / 3);
+    const col = i % 3;
+    piece.style.backgroundImage = `url(${imageUrl})`;
+    piece.style.backgroundPosition = `-${col * 100}px -${row * 100}px`;
+    
+    pieceOrder.push(piece);
+  }
+  
+  // Mezclar el orden
+  shuffle(pieceOrder);
+  
+  // Agregar todas las piezas al grid en orden mezclado
+  pieceOrder.forEach((piece, idx) => {
+    piece.dataset.currentIndex = idx;
+    grid.appendChild(piece);
+  });
+  
+  console.log("✓ Puzzle inicializado");
+  
+  checkPuzzle();
+
+  let draggedPiece = null;
+  let draggedStartIndex = -1;
+
+  function handleDragStart(e) {
+    draggedPiece = this;
+    draggedStartIndex = parseInt(this.dataset.currentIndex);
+    this.classList.add('dragging');
+    console.log(`🎯 Arrastrando pieza desde índice: ${draggedStartIndex}`);
   }
 
-  // Register plugins
-  gsap.registerPlugin(ScrollTrigger, TextPlugin);
-
-  // Resetear transformaciones previas
-  gsap.set(".results-actions button", { clearProps: "all" });
-  gsap.set(container, { clearProps: "all", opacity: 1 });
-  gsap.set(results, { clearProps: "all", opacity: 1 });
-
-  // Timeline master
-  const masterTL = gsap.timeline();
-
-  // 1. Contenedor
-  masterTL.from(container, {
-    scale: 0.5,
-    opacity: 0,
-    duration: 0.8,
-    ease: "back.out(1.5)",
-  });
-
-  // 2. Orbes
-  masterTL.from(
-    ".glow-orb",
-    {
-      scale: 0,
-      opacity: 0,
-      duration: 0.6,
-      stagger: 0.1,
-      ease: "power2.out",
-    },
-    "-=0.6"
-  );
-
-  // Animación perpetua de orbes
-  gsap.to(".glow-orb-1", {
-    x: "random(-80, 80)",
-    y: "random(-80, 80)",
-    duration: 4,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut",
-  });
-
-  gsap.to(".glow-orb-2", {
-    x: "random(-60, 60)",
-    y: "random(-60, 60)",
-    duration: 5,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut",
-  });
-
-  gsap.to(".glow-orb-3", {
-    x: "random(-100, 100)",
-    y: "random(-100, 100)",
-    duration: 6,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut",
-  });
-
-  // 3. Título
-  masterTL.from(
-    ".results-title",
-    {
-      y: -80,
-      opacity: 0,
-      duration: 0.6,
-      ease: "power3.out",
-    },
-    "-=0.4"
-  );
-
-  // 4. Subtítulo
-  masterTL.from(
-    ".results-subtitle",
-    {
-      opacity: 0,
-      y: 20,
-      duration: 0.5,
-      ease: "power2.out",
-    },
-    "-=0.3"
-  );
-
-  // 5. Stats card
-  masterTL.from(
-    ".stats-card",
-    {
-      scale: 0,
-      opacity: 0,
-      duration: 0.8,
-      ease: "back.out(1.5)",
-    },
-    "-=0.2"
-  );
-
-  // 6. Stats items
-  masterTL.from(
-    ".stat-item",
-    {
-      scale: 0,
-      opacity: 0,
-      stagger: 0.15,
-      duration: 0.6,
-      ease: "back.out(1.5)",
-    },
-    "-=0.4"
-  );
-
-  // Counter animation
-  const statNumbers = document.querySelectorAll(".stat-number");
-  statNumbers.forEach((num) => {
-    const finalValue = parseInt(num.dataset.value);
-    masterTL.from(
-      num,
-      {
-        textContent: 0,
-        duration: 1,
-        snap: { textContent: 1 },
-        ease: "power2.out",
-        onUpdate: function () {
-          num.textContent = Math.round(this.targets()[0].textContent);
-        },
-      },
-      "-=0.6"
-    );
-  });
-
-  // Glow iconos
-  gsap.to(".stat-icon", {
-    textShadow: "0 0 15px currentColor",
-    scale: 1.05,
-    duration: 1,
-    repeat: -1,
-    yoyo: true,
-    ease: "sine.inOut",
-  });
-
-  // 7. Response cards (nuevas)
-  if (responseCards.length > 0) {
-    console.log("🎨 Animando", responseCards.length, "response cards");
-
-    // Contenedor de lista
-    masterTL.from(
-      ".response-list-wrapper",
-      {
-        opacity: 0,
-        y: 20,
-        duration: 0.5,
-        ease: "power2.out",
-      },
-      "-=0.3"
-    );
-
-    // Animar cada card desde abajo sin movimiento horizontal
-    masterTL.from(
-      responseCards,
-      {
-        y: 60,
-        opacity: 0,
-        scale: 0.9,
-        stagger: 0.06,
-        duration: 0.5,
-        ease: "power2.out",
-      },
-      "-=0.2"
-    );
-
-    // Asegurar que se limpien TODAS las transformaciones después de la animación
-    masterTL.call(() => {
-      responseCards.forEach(card => {
-        gsap.set(card, { clearProps: "all" });
-        // Forzar reseteo de estilo inline
-        card.style.transform = "";
-        card.style.opacity = "";
-      });
-    });
-  } else {
-    console.warn("⚠ No se encontraron response-cards para animar");
+  function handleDragOver(e) {
+    e.preventDefault();
+    return false;
   }
 
-  // 8. Botón de inicio - SOLO UNO
-  const homeButton = document.getElementById("home-btn");
-
-  console.log("🔍 DEBUG - Botón encontrado:", homeButton);
-
-  masterTL.from(
-    ".results-actions",
-    {
-      scale: 0,
-      opacity: 0,
-      duration: 0.6,
-      ease: "back.out(1.5)",
-      clearProps: "all",
-    },
-    "-=0.2"
-  );
-
-  const allButtons = document.querySelectorAll(".results-actions button");
-  console.log("📊 Total botones en .results-actions:", allButtons.length);
-
-  masterTL.fromTo(
-    allButtons,
-    {
-      scale: 0,
-      opacity: 0,
-    },
-    {
-      scale: 1,
-      opacity: 1,
-      stagger: 0.1,
-      duration: 0.5,
-      ease: "back.out(1.5)",
-      clearProps: "all",
-    },
-    "-=0.4"
-  );
-
-  // Hover effect solo para el botón home
-  if (homeButton) {
-    homeButton.addEventListener("mouseenter", () => {
-      gsap.to(homeButton, {
-        scale: 1.1,
-        boxShadow: "0 0 30px rgba(46, 230, 167, 0.6)",
-        duration: 0.3,
+  function handleDrop(e) {
+    e.preventDefault();
+    if (draggedPiece !== this && draggedPiece) {
+      const targetIndex = parseInt(this.dataset.currentIndex);
+      
+      console.log(`🔄 Intercambiando índices: ${draggedStartIndex} ↔ ${targetIndex}`);
+      
+      // Intercambiar los valores de currentIndex
+      draggedPiece.dataset.currentIndex = targetIndex;
+      this.dataset.currentIndex = draggedStartIndex;
+      
+      // Actualizar el array pieceOrder
+      const temp = pieceOrder[draggedStartIndex];
+      pieceOrder[draggedStartIndex] = pieceOrder[targetIndex];
+      pieceOrder[targetIndex] = temp;
+      
+      // Limpiar y reconstruir el grid en el nuevo orden
+      grid.innerHTML = '';
+      pieceOrder.forEach(piece => {
+        grid.appendChild(piece);
       });
-    });
-
-    homeButton.addEventListener("mouseleave", () => {
-      gsap.to(homeButton, {
-        scale: 1,
-        boxShadow: "0 10px 30px rgba(46, 230, 167, 0.3)",
-        duration: 0.2,
-      });
-    });
+      
+      console.log("   ✓ Intercambio completado");
+      checkPuzzle();
+    }
+    return false;
   }
 
-  // Callback final: asegurar que todas las cards y sus hijos estén en posición correcta
-  masterTL.call(() => {
-    console.log("✅ Animaciones completadas - limpiando estilos finales");
+  function handleDragEnd(e) {
+    if (this.classList.contains('dragging')) {
+      this.classList.remove('dragging');
+    }
+    draggedPiece = null;
+    draggedStartIndex = -1;
+  }
 
-    // Detener todas las animaciones GSAP infinitas primero
-    gsap.killTweensOf(".response-badge");
-    gsap.killTweensOf(".stat-icon");
+  // Agregar event listeners
+  pieceOrder.forEach(piece => {
+    piece.addEventListener('dragstart', handleDragStart);
+    piece.addEventListener('dragover', handleDragOver);
+    piece.addEventListener('drop', handleDrop);
+    piece.addEventListener('dragend', handleDragEnd);
+  });
 
-    responseCards.forEach(card => {
-      // Limpiar cualquier transformación residual de la card
-      gsap.set(card, { clearProps: "all" });
-      card.style.transform = "";
-      card.style.opacity = "1";
-      card.style.translate = "none";
-      card.style.rotate = "none";
-      card.style.scale = "none";
-
-      // Limpiar también los badges dentro de cada card
-      const badge = card.querySelector(".response-badge");
-      if (badge) {
-        gsap.set(badge, { clearProps: "all" });
-        badge.style.transform = "";
-        badge.style.translate = "none";
-        badge.style.rotate = "none";
-        badge.style.scale = "none";
+  function checkPuzzle() {
+    let correct = 0;
+    const gridChildren = Array.from(grid.children);
+    
+    console.log("🔍 Validando puzzle...");
+    
+    gridChildren.forEach((piece, currentDOMIndex) => {
+      const correctPos = parseInt(piece.dataset.correctPos);
+      const isValid = (correctPos === currentDOMIndex);
+      
+      if (isValid) {
+        piece.classList.add('correct');
+        correct++;
+      } else {
+        piece.classList.remove('correct');
       }
     });
-  });
-
-  // Agregar pequeño delay antes de habilitar hovers
-  masterTL.call(() => {
-    // Hover en response cards (solo después de que las animaciones terminen)
-    responseCards.forEach((card) => {
-      card.addEventListener("mouseenter", () => {
-        gsap.to(card, {
-          y: -4,
-          duration: 0.3,
-          ease: "power2.out",
-          overwrite: true
-        });
+    
+    console.log(`📊 Resultado: ${correct}/9 piezas correctas`);
+    
+    if (correctEl) correctEl.textContent = correct;
+    
+    if (correct === 9) {
+      console.log("🎉 ¡Puzzle completado!");
+      clearInterval(timerInterval);
+      const time = Math.floor((Date.now() - startTime) / 1000);
+      
+      // Deshabilitar drag & drop
+      gridChildren.forEach(piece => {
+        piece.draggable = false;
+        piece.style.cursor = 'default';
       });
-
-      card.addEventListener("mouseleave", () => {
-        gsap.to(card, {
-          y: 0,
-          duration: 0.3,
-          ease: "power2.inOut",
-          overwrite: true
+      
+      setTimeout(() => {
+        Swal.fire({
+          title: '¡Puzzle completado!',
+          html: `Lo resolviste en <strong>${time}</strong> segundos`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          console.log("→ Continuando con siguiente imagen...");
+          continuarDespuesDeCaptcha();
         });
-      });
-    });
-  }, null, "+=0.2");
+      }, 500);
+    }
+  }
 }
 
-async function recordAndNext(decision) {
-  const selectedRuleBtn = document.querySelector(".rule-btn.active");
+function continuarDespuesDeCaptcha() {
+  console.log("✅ CAPTCHA completado, continuando...");
   
-  // Validar si se intenta rechazar sin regla seleccionada
-  if (decision === "reject" && !selectedRuleBtn) {
-    await Swal.fire({
-      title: "Selección obligatoria",
-      text: "Debes seleccionar una regla para rechazar la imagen.",
-      icon: "warning",
-      confirmButtonText: "Entendido",
-    });
-
-    // Animar el contenedor de reglas
-    const rulesSection = document.querySelector(".rules-section");
-    if (rulesSection) {
-      gsap.fromTo(
-        rulesSection,
-        { x: -10 },
-        {
-          x: 10,
-          duration: 0.1,
-          repeat: 5,
-          yoyo: true,
-          ease: "power2.inOut",
-          onComplete: () => {
-            gsap.to(rulesSection, { x: 0, duration: 0.2 });
-          },
-        }
-      );
-    }
-
-    return;
+  if (index + 1 < selected.length) {
+    showImage(index + 1);
+    setTimeout(() => {
+      if (rejectBtn) rejectBtn.disabled = false;
+    }, 300);
+  } else {
+    showResults();
   }
+}
 
-  // AHORA sí, deshabilitar botones para prevenir clics múltiples
+// ====================================
+// FUNCIONES PRINCIPALES
+// ====================================
+
+async function recordAndNext(dec) {
+  console.log(`📝 Registrando decisión: ${dec}`);
+  
   if (acceptBtn) acceptBtn.disabled = true;
   if (rejectBtn) rejectBtn.disabled = true;
 
-  // Prepare response data
-  let ruleName = "Imagen aceptada";
-  let ruleId = null;
-
-  if (selectedRuleBtn) {
-    ruleId = selectedRuleBtn.dataset.ruleId;
-    ruleName = selectedRuleBtn.textContent.trim();
+  let comment = "";
+  
+  if (dec === "reject") {
+    const activeBtn = document.querySelector(".rule-btn.active");
+    if (!activeBtn) {
+      await Swal.fire({
+        title: "Selecciona una regla",
+        text: "Para rechazar, debes seleccionar una regla aplicable.",
+        icon: "warning",
+      });
+      if (rejectBtn) rejectBtn.disabled = false;
+      if (acceptBtn) acceptBtn.disabled = false;
+      return;
+    }
+    const ruleId = parseInt(activeBtn.dataset.ruleId);
+    const allRules = [...GAMEMODE_RULES, ...SKIN_RULES];
+    const rule = allRules.find((r) => r.id === ruleId);
+    comment = rule ? rule.label : "Sin motivo";
   }
 
-  responses.push({ 
-    image: selected[index], 
-    decision, 
-    comment: ruleName,
-    ruleId: ruleId
+  responses.push({
+    image: selected[index],
+    decision: dec,
+    comment: comment,
   });
 
-  gsap.to(".evaluator-card", {
-    y: -20,
-    opacity: 0,
-    duration: 0.18,
+  gsap.to("#eval-image", {
+    scale: 0.95,
+    opacity: 0.7,
+    duration: 0.25,
+    ease: "power2.in",
     onComplete: () => {
-      if (index + 1 < selected.length) {
-        showImage(index + 1);
-        gsap.fromTo(
-          ".evaluator-card",
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.3 }
-        );
-        // Re-habilitar botones después de la transición
-        setTimeout(() => {
-          if (rejectBtn) rejectBtn.disabled = false;
-          // acceptBtn se habilita en showImage
-        }, 300);
-      } else {
-        showResults();
-      }
+      gsap.to("#eval-image", { scale: 1, opacity: 1, duration: 0.3 });
     },
   });
+
+  const shouldShowCaptcha = Math.random() < CAPTCHA_PROBABILITY;
+  
+  if (shouldShowCaptcha && index + 1 < selected.length) {
+    console.log("🎲 ¡Activado CAPTCHA!");
+    await showPuzzleCaptcha();
+  } else {
+    if (index + 1 < selected.length) {
+      showImage(index + 1);
+      setTimeout(() => {
+        if (rejectBtn) rejectBtn.disabled = false;
+      }, 300);
+    } else {
+      showResults();
+    }
+  }
 }
 
 function resetAll() {
   console.log("🔄 Reiniciando aplicación...");
   
-  // Matar todas las animaciones GSAP activas
   gsap.killTweensOf("*");
 
-  // Limpiar arrays de datos
   responses = [];
   selected = [];
   index = 0;
   currentImageType = null;
 
-  // Limpiar imagen del evaluador
   if (evalImage) {
     evalImage.src = "";
     evalImage.alt = "";
   }
   
-  // Limpiar contenedor de reglas
   const rulesContainer = document.querySelector(".rules-container-stacked");
   if (rulesContainer) {
     rulesContainer.innerHTML = "";
   }
   
-  // Limpiar selección de reglas
   const ruleButtons = document.querySelectorAll(".rule-btn");
   ruleButtons.forEach((btn) => btn.classList.remove("active"));
   
-  // Resetear progreso
   if (progressBar) progressBar.style.width = "0%";
   if (progressText) progressText.textContent = "Imagen 0/0";
   
-  // Re-habilitar botones
   if (startBtn) startBtn.disabled = false;
   if (acceptBtn) acceptBtn.disabled = false;
 
-  // Limpiar todas las transformaciones GSAP de los contenedores principales
   gsap.set([results, evaluator, startScreen, ".evaluator-card"], { clearProps: "all" });
 
-  // Limpiar todas las transformaciones de elementos internos de resultados
   gsap.set(".results-container, .results-container *, .response-card, .glow-orb, .stat-item, .response-badge", {
     clearProps: "all"
   });
 
-  // OCULTAR COMPLETAMENTE evaluador y resultados
   results.style.display = "none";
   results.style.visibility = "hidden";
   results.classList.add("d-none");
@@ -723,7 +622,6 @@ function resetAll() {
   evaluator.style.visibility = "hidden";
   evaluator.classList.add("d-none");
 
-  // MOSTRAR pantalla de inicio
   startScreen.style.display = "block";
   startScreen.style.visibility = "visible";
   startScreen.style.opacity = "1";
@@ -732,10 +630,9 @@ function resetAll() {
   startScreen.style.position = "relative";
   startScreen.classList.remove("d-none");
 
-  // Animación de entrada
   gsap.from("#start-screen", { y: 20, opacity: 0, duration: 0.6 });
   
-  console.log("✓ Reinicio completo - estado limpio");
+  console.log("✓ Reinicio completo");
 }
 
 function renderRuleButtons() {
@@ -747,10 +644,8 @@ function renderRuleButtons() {
     return;
   }
 
-  console.log("✓ Contenedor encontrado:", container);
   container.innerHTML = "";
 
-  // Seleccionar el set de reglas apropiado
   const rulesToUse = currentImageType === "skin" ? SKIN_RULES : GAMEMODE_RULES;
 
   rulesToUse.forEach((rule) => {
@@ -765,21 +660,15 @@ function renderRuleButtons() {
     `;
 
     btn.addEventListener("click", () => {
-      // Si el botón ya está activo, deseleccionarlo
       if (btn.classList.contains("active")) {
         btn.classList.remove("active");
-        // Re-habilitar botón de aceptar cuando se deselecciona
         if (acceptBtn) acceptBtn.disabled = false;
       } else {
-        // Desactivar otros botones
         document.querySelectorAll(".rule-btn").forEach((b) => b.classList.remove("active"));
-        // Activar este botón
         btn.classList.add("active");
-        // Deshabilitar botón de aceptar cuando se selecciona una regla
         if (acceptBtn) acceptBtn.disabled = true;
       }
 
-      // Animación
       gsap.to(btn, {
         scale: 1.02,
         duration: 0.15,
@@ -815,7 +704,7 @@ startBtn.addEventListener("click", async () => {
     return;
   }
 
-  console.log("📥 Cargando imágenes...");
+  console.log("🔥 Cargando imágenes...");
   await loadImages();
   
   if (allImages.length === 0) {

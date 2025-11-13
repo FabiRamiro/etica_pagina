@@ -381,116 +381,148 @@ footer {
     perspective: 1000px;
     transform-style: preserve-3d;
     position: relative;
+    z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 2rem 1rem;
-    width: 100%;
 }
 
-/* Orbes de luz flotantes */
+/* Orbes de brillo animados */
 .glow-orb {
-    position: fixed;
-    width: 300px;
-    height: 300px;
+    position: absolute;
     border-radius: 50%;
-    pointer-events: none;
     filter: blur(80px);
     opacity: 0.3;
-    z-index: 0;
+    animation: float 6s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
 }
 
 .glow-orb-1 {
-    background: radial-gradient(circle, #7b61ff 0%, transparent 70%);
-    top: 10%;
-    left: 5%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, #7b61ff, transparent);
+    top: -50px;
+    left: -100px;
+    animation-delay: 0s;
 }
 
 .glow-orb-2 {
-    background: radial-gradient(circle, #00d4ff 0%, transparent 70%);
-    top: 40%;
-    right: 5%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, #00d4ff, transparent);
+    top: 50%;
+    right: -150px;
+    animation-delay: 2s;
 }
 
 .glow-orb-3 {
-    background: radial-gradient(circle, #ff3b9d 0%, transparent 70%);
-    bottom: 10%;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, #ff3b9d, transparent);
+    bottom: -80px;
     left: 50%;
-    transform: translateX(-50%);
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    25% {
+        transform: translate(20px, -30px) scale(1.05);
+    }
+
+    50% {
+        transform: translate(-15px, 20px) scale(0.95);
+    }
+
+    75% {
+        transform: translate(30px, 10px) scale(1.02);
+    }
 }
 
 /* Header de resultados */
 .results-header {
     position: relative;
     z-index: 10;
+    margin-bottom: 3rem;
 }
 
 .results-title {
     font-size: 3.5rem;
-    font-weight: 900;
-    color: #ffffff;
-    letter-spacing: 2px;
+    color: #fff;
     text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(123, 97, 255, 0.6),
+        0 0 40px rgba(0, 212, 255, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.8);
     position: relative;
-    text-shadow: 0 0 20px rgba(123, 97, 255, 0.8), 0 0 40px rgba(0, 212, 255, 0.6);
+    display: inline-block;
+}
+
+.results-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, #7b61ff, #00d4ff, transparent);
+    border-radius: 2px;
 }
 
 .results-subtitle {
     font-size: 1.2rem;
-    color: rgba(230, 238, 248, 0.9);
-    font-weight: 300;
+    color: rgba(230, 238, 248, 0.85);
     letter-spacing: 1px;
 }
 
+/* Summary wrapper */
 .summary-wrapper {
     position: relative;
     z-index: 10;
-    width: 100%;
-    margin-bottom: 1.5rem;
 }
 
-/* Stats Card - Tarjeta de estadísticas épica */
+/* Stats card con efecto de vidrio */
 .stats-card {
-    background: linear-gradient(135deg, rgba(123, 97, 255, 0.15) 0%, rgba(0, 212, 255, 0.1) 100%);
-    border: 2px solid rgba(123, 97, 255, 0.3);
-    border-radius: 24px;
-    padding: 2rem 1.5rem;
+    background: linear-gradient(135deg, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.6) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin-bottom: 3rem;
     display: flex;
+    justify-content: space-around;
     align-items: center;
-    justify-content: center;
     gap: 3rem;
-    max-width: 700px;
-    margin: 1.5rem auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 0 30px rgba(123, 97, 255, 0.05);
+    backdrop-filter: blur(20px);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 20px 60px rgba(123, 97, 255, 0.3),
-        inset 0 0 40px rgba(123, 97, 255, 0.1);
-    z-index: 10;
 }
 
 .stats-card::before {
     content: '';
     position: absolute;
-    top: -100%;
+    top: 0;
     left: -100%;
-    width: 300%;
-    height: 300%;
-    background: conic-gradient(
-        from 0deg at 50% 50%,
-        transparent 0deg,
-        transparent 60deg,
-        rgba(123, 97, 255, 0.6) 90deg,
-        rgba(0, 212, 255, 0.4) 120deg,
-        transparent 150deg,
-        transparent 360deg
-    );
-    animation: rotate 4s linear infinite;
-    z-index: -1;
-    opacity: 0.5;
-    filter: blur(20px);
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    animation: shimmer 3s ease-in-out infinite;
 }
 
-@keyframes rotate {
+@keyframes shimmer {
+    0% {
+        left: -100%;
+    }
+
     100% {
-        transform: rotate(360deg);
+        left: 100%;
     }
 }
 
@@ -498,242 +530,88 @@ footer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.8rem;
+    gap: 1rem;
     position: relative;
-    z-index: 1;
+    transform-style: preserve-3d;
 }
 
 .stat-icon {
     font-size: 3rem;
-    font-weight: bold;
+    filter: drop-shadow(0 0 15px currentColor);
 }
 
 .accepted-stat .stat-icon {
     color: #2ee6a7;
+    animation: pulse-green 2s ease-in-out infinite;
 }
 
 .rejected-stat .stat-icon {
     color: #ff5e7c;
+    animation: pulse-red 2s ease-in-out infinite;
+}
+
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 10px #2ee6a7);
+    }
+
+    50% {
+        filter: drop-shadow(0 0 25px #2ee6a7);
+    }
+}
+
+@keyframes pulse-red {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 10px #ff5e7c);
+    }
+
+    50% {
+        filter: drop-shadow(0 0 25px #ff5e7c);
+    }
 }
 
 .stat-number {
     font-size: 4rem;
-    font-weight: 900;
-    line-height: 1;
-    color: #ffffff;
-    text-shadow: 0 4px 20px rgba(255, 255, 255, 0.5);
+    color: #fff;
+    text-shadow: 0 0 20px currentColor, 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 .stat-label {
     font-size: 1.1rem;
-    font-weight: 600;
+    color: rgba(230, 238, 248, 0.9);
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: rgba(230, 238, 248, 0.8);
+    font-weight: 600;
 }
 
 .stat-divider {
     width: 2px;
-    height: 100px;
+    height: 120px;
     background: linear-gradient(to bottom, transparent, rgba(123, 97, 255, 0.5), transparent);
-    position: relative;
 }
 
-/* Response List - Lista de respuestas con estilo futurista */
-.response-list {
+/* Lista de respuestas */
+.summary-list {
     position: relative;
     z-index: 10;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-    width: 100%;
 }
 
-.custom-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1rem 0;
-    counter-reset: item;
-    width: 100%;
-}
-
-.list-item {
-    background: linear-gradient(135deg, rgba(15, 23, 36, 0.8) 0%, rgba(15, 23, 36, 0.6) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-    margin-bottom: 1.5rem;
-    padding: 1.5rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    counter-increment: item;
-}
-
-.list-item::before {
-    content: counter(item);
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    font-size: 3rem;
-    font-weight: 900;
-    opacity: 0.1;
-    color: #fff;
-    line-height: 1;
-}
-
-.list-item::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(123, 97, 255, 0.2), transparent);
-    transition: left 0.5s ease;
-    pointer-events: none;
-}
-
-.list-item:hover::after {
-    left: 100%;
-}
-
-.list-item-content {
-    position: relative;
-    z-index: 1;
-}
-
-.decision-badge {
-    display: inline-block;
-    padding: 0.5rem 1.2rem;
-    border-radius: 50px;
-    font-weight: 800;
-    font-size: 0.85rem;
-    letter-spacing: 1.5px;
-    margin-bottom: 0.8rem;
-    text-shadow: 0 2px 10px currentColor;
-    box-shadow: 0 4px 15px currentColor;
-}
-
-.decision-badge.decision-accept {
-    background: linear-gradient(135deg, #2ee6a7 0%, #06b36f 100%);
-    color: #fff;
-    border: 2px solid #2ee6a7;
-}
-
-.decision-badge.decision-reject {
-    background: linear-gradient(135deg, #ff5e7c 0%, #ff3b4d 100%);
-    color: #fff;
-    border: 2px solid #ff5e7c;
-}
-
-.list-item.decision-accept {
-    border-left: 4px solid #2ee6a7;
-    box-shadow: -5px 0 20px rgba(46, 230, 167, 0.2);
-}
-
-.list-item.decision-reject {
-    border-left: 4px solid #ff5e7c;
-    box-shadow: -5px 0 20px rgba(255, 94, 124, 0.2);
-}
-
-.image-path {
-    display: block;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.6rem 1rem;
-    border-radius: 8px;
-    margin: 0.8rem 0;
-    font-size: 0.9rem;
-    color: #00d4ff;
-    border: 1px solid rgba(0, 212, 255, 0.2);
-    word-break: break-all;
-}
-
-.comment-section {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-left: 3px solid rgba(123, 97, 255, 0.5);
-    border-radius: 8px;
-}
-
-.comment-label {
-    color: #7b61ff;
-    font-size: 0.85rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 0.5rem;
-}
-
-.comment-text {
-    color: rgba(230, 238, 248, 0.95);
-    font-size: 1rem;
-    line-height: 1.6;
-    font-style: normal;
-    font-weight: 400;
-}
-
-.comment-text em {
-    color: rgba(230, 238, 248, 0.5);
-}
-
-/* FORZAR VISIBILIDAD DE BOTONES - IMPORTANTE */
+/* Botones de acción */
 .results-actions {
-    display: flex !important;
-    gap: 1.5rem;
+    display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
-    margin: 2rem auto 2rem;
+    gap: 2rem;
+    margin-top: 3rem;
     position: relative;
     z-index: 10;
-    padding: 1rem;
-    visibility: visible !important;
 }
 
-/* Botón de nueva evaluación */
-.new-eval-btn {
-    background: linear-gradient(135deg, #00d4ff 0%, #7b61ff 100%);
-    border: none;
-    padding: 1rem 3rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    border-radius: 50px;
-    box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-    z-index: 10;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: white;
-    cursor: pointer;
-}
-
-.new-eval-btn::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s ease, height 0.6s ease;
-}
-
-.new-eval-btn:hover::before {
-    width: 300px;
-    height: 300px;
-}
-
-.new-eval-btn span {
-    position: relative;
-    z-index: 1;
-}
-
-/* Botón de reinicio épico */
+/* Botón de reiniciar */
 .restart-epic {
     background: linear-gradient(135deg, #7b61ff 0%, #00d4ff 100%);
     border: none;
@@ -1122,5 +1000,163 @@ footer {
     .new-eval-btn {
         width: 100%;
         max-width: 300px;
+    }
+}
+
+/* ====================================
+   PUZZLE CAPTCHA STYLES
+   ==================================== */
+
+.puzzle-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.puzzle-title {
+    font-family: 'Bungee', sans-serif;
+    font-size: 1.5rem;
+    text-align: center;
+    color: #7b61ff;
+    text-shadow: 0 0 10px rgba(123, 97, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.puzzle-subtitle {
+    text-align: center;
+    color: rgba(230, 238, 248, 0.8);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+}
+
+.puzzle-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    background: rgba(123, 97, 255, 0.1);
+    padding: 8px;
+    border-radius: 12px;
+    border: 2px solid rgba(123, 97, 255, 0.3);
+    box-shadow: 0 0 20px rgba(123, 97, 255, 0.2);
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.puzzle-piece {
+    width: 100px;
+    height: 100px;
+    background-size: 300px 300px;
+    cursor: grab;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.puzzle-piece:active {
+    cursor: grabbing;
+}
+
+.puzzle-piece.dragging {
+    opacity: 0.5;
+    transform: scale(1.1) rotate(5deg);
+    z-index: 100;
+    cursor: grabbing;
+    border-color: rgba(123, 97, 255, 0.8);
+    box-shadow: 0 10px 30px rgba(123, 97, 255, 0.6);
+}
+
+.puzzle-piece:hover:not(.correct) {
+    border-color: rgba(123, 97, 255, 0.6);
+    box-shadow: 0 0 15px rgba(123, 97, 255, 0.4);
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.puzzle-piece.correct {
+    border-color: #2ee6a7;
+    box-shadow: 0 0 20px rgba(46, 230, 167, 0.6), inset 0 0 10px rgba(46, 230, 167, 0.2);
+    animation: correctPulse 0.5s ease;
+    cursor: default !important;
+    position: relative;
+}
+
+.puzzle-piece.correct::after {
+    content: '✓';
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    font-size: 20px;
+    color: #2ee6a7;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(46, 230, 167, 0.8);
+    animation: checkmark-appear 0.3s ease;
+}
+
+@keyframes checkmark-appear {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(-45deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes correctPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.puzzle-timer {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #00d4ff;
+    font-weight: 700;
+    margin-top: 1rem;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.puzzle-progress {
+    text-align: center;
+    font-size: 0.95rem;
+    color: rgba(230, 238, 248, 0.7);
+    margin-top: 0.5rem;
+}
+
+/* SweetAlert2 customization for puzzle */
+.swal2-popup.puzzle-modal {
+    background: linear-gradient(135deg, rgba(11, 16, 32, 0.95) 0%, rgba(15, 23, 36, 0.95) 100%);
+    border: 2px solid rgba(123, 97, 255, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(20px);
+    padding: 2rem;
+}
+
+.swal2-html-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 576px) {
+    .puzzle-piece {
+        width: 80px;
+        height: 80px;
+        background-size: 240px 240px;
+    }
+    
+    .puzzle-title {
+        font-size: 1.2rem;
     }
 }
