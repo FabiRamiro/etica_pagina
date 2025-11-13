@@ -360,6 +360,18 @@ async function showResults() {
 // ====================================
 
 async function showPuzzleCaptcha() {
+  // Alternar aleatoriamente entre puzzle y Simon Dice
+  // 70% Simon Dice, 30% Puzzle
+  const gameType = Math.random() < 0.4 ? "puzzle" : "simon";
+
+  if (gameType === "puzzle") {
+    await showImagePuzzle();
+  } else {
+    await showSimonSays();
+  }
+}
+
+async function showImagePuzzle() {
   const selectedImage = getRandomCaptchaImage();
 
   console.log("🧩 Mostrando puzzle CAPTCHA...");
@@ -388,6 +400,186 @@ async function showPuzzleCaptcha() {
       initPuzzle(selectedImage);
     },
   });
+}
+
+async function showSimonSays() {
+  console.log("🎮 Mostrando Simon Dice...");
+
+  const simonHTML = `
+    <div class="simon-container">
+      <div class="simon-title">🎮 Simon Dice</div>
+      <div class="simon-subtitle">Memoriza y repite la secuencia</div>
+      <div class="simon-board">
+        <div class="simon-button simon-red" data-color="red"></div>
+        <div class="simon-button simon-blue" data-color="blue"></div>
+        <div class="simon-button simon-green" data-color="green"></div>
+        <div class="simon-button simon-yellow" data-color="yellow"></div>
+      </div>
+      <div class="simon-info">
+        <div class="simon-level">Nivel: <span id="simonLevel">1</span></div>
+        <div class="simon-status" id="simonStatus">Observa la secuencia...</div>
+      </div>
+    </div>
+  `;
+
+  Swal.fire({
+    html: simonHTML,
+    showConfirmButton: false,
+    showCloseButton: false,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    customClass: {
+      popup: "simon-modal",
+    },
+    didOpen: () => {
+      initSimonGame();
+    },
+  });
+}
+
+function initSimonGame() {
+  console.log("🎯 Inicializando Simon Dice");
+
+  const colors = ["red", "blue", "green", "yellow"];
+  let sequence = [];
+  let playerSequence = [];
+  let level = 1;
+  const LEVELS_TO_WIN = 5;
+  let canPlay = false;
+
+  const buttons = document.querySelectorAll(".simon-button");
+  const levelEl = document.getElementById("simonLevel");
+  const statusEl = document.getElementById("simonStatus");
+
+  function playSound(color) {
+    // Frecuencias diferentes para cada color
+    const frequencies = {
+      red: 329.63,
+      blue: 261.63,
+      green: 349.23,
+      yellow: 392.0,
+    };
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = frequencies[color];
+    oscillator.type = "sine";
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      audioContext.currentTime + 0.3
+    );
+
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  }
+
+  function lightUp(color) {
+    const button = document.querySelector(`.simon-${color}`);
+    button.classList.add("active");
+    playSound(color);
+
+    setTimeout(() => {
+      button.classList.remove("active");
+    }, 400);
+  }
+
+  async function playSequence() {
+    canPlay = false;
+    statusEl.textContent = "Observa la secuencia...";
+
+    for (let i = 0; i < sequence.length; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      lightUp(sequence[i]);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    canPlay = true;
+    playerSequence = [];
+    statusEl.textContent = "¡Tu turno! Repite la secuencia";
+  }
+
+  function nextLevel() {
+    level++;
+    levelEl.textContent = level;
+
+    if (level > LEVELS_TO_WIN) {
+      // ¡Victoria!
+      console.log("🎉 ¡Simon completado!");
+      statusEl.textContent = "¡Completado!";
+
+      setTimeout(() => {
+        Swal.fire({
+          title: "¡Excelente!",
+          html: `Completaste <strong>${LEVELS_TO_WIN}</strong> niveles`,
+          icon: "success",
+          timer: 2000,
+          showConfirmButton: false,
+        }).then(() => {
+          console.log("→ Continuando con siguiente imagen...");
+          continuarDespuesDeCaptcha();
+        });
+      }, 500);
+      return;
+    }
+
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    sequence.push(randomColor);
+    playSequence();
+  }
+
+  function handlePlayerInput(color) {
+    if (!canPlay) return;
+
+    lightUp(color);
+    playerSequence.push(color);
+
+    // Verificar si el color es correcto
+    const currentIndex = playerSequence.length - 1;
+    if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+      // Error
+      canPlay = false;
+      statusEl.textContent = "❌ Error! Intenta de nuevo...";
+      statusEl.style.color = "#ff5e7c";
+
+      setTimeout(() => {
+        playerSequence = [];
+        statusEl.style.color = "";
+        playSequence();
+      }, 1500);
+      return;
+    }
+
+    // Si completó la secuencia correctamente
+    if (playerSequence.length === sequence.length) {
+      canPlay = false;
+      statusEl.textContent = "✓ ¡Correcto!";
+      statusEl.style.color = "#00ff88";
+
+      setTimeout(() => {
+        statusEl.style.color = "";
+        nextLevel();
+      }, 1000);
+    }
+  }
+
+  // Event listeners para los botones
+  buttons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const color = button.dataset.color;
+      handlePlayerInput(color);
+    });
+  });
+
+  // Iniciar el juego
+  nextLevel();
+  console.log("✓ Simon Dice inicializado");
 }
 
 function initPuzzle(imageUrl) {
